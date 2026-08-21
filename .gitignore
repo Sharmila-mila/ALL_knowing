@@ -1,0 +1,27 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environment variables & secrets
+.env
+not to share/
+.streamlit/secrets.toml
+
+# Build / Output artifacts
+output/
+.cache/
+*.log
+*.sqlite
+*.db
+
+# OS files
+.DS_Store
+Thumbs.db
