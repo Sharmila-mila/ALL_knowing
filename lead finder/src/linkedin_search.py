@@ -970,6 +970,61 @@ def _peek_profiles(page: Any, found: list[dict[str, Any]], on_progress: Any = No
         pass
 
 
+def _fallback_web_search_people(
+    name: str, company: str = "", max_profiles: int = 5
+) -> list[dict[str, Any]]:
+    """Fallback candidate search using DuckDuckGo HTML when direct LinkedIn login is blocked by Cloud IP detection."""
+    import re
+    from urllib.parse import quote_plus, unquote
+    import httpx
+
+    query = f'"{name}" "{company}" site:linkedin.com/in/'.strip()
+    search_url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        )
+    }
+    found: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    try:
+        resp = httpx.get(
+            search_url, headers=headers, timeout=12.0, follow_redirects=True
+        )
+        if resp.status_code == 200:
+            raw_links = re.findall(
+                r"https?://(?:[a-z]{2,3}\.)?linkedin\.com/in/[A-Za-z0-9\-_%]+",
+                resp.text,
+            )
+            for link in raw_links:
+                cleaned = link.split("?")[0].rstrip("/")
+                if "/in/" not in cleaned:
+                    continue
+                slug = unquote(cleaned.split("/in/")[-1]).lower()
+                if slug and slug not in seen and not slug.endswith("/in"):
+                    seen.add(slug)
+                    found.append(
+                        {
+                            "url": cleaned,
+                            "name": name,
+                            "key": slug,
+                            "headline": f"{name} - {company} | Candidate Profile",
+                            "location": "",
+                            "photo": "",
+                            "banner": "",
+                            "shot": "",
+                            "companies": [company] if company else [],
+                        }
+                    )
+                if len(found) >= max_profiles:
+                    break
+    except Exception:
+        pass
+    return found
+
+
 def search_people_urls(
     name: str,
     company: str = "",
@@ -991,11 +1046,12 @@ def search_people_urls(
                 settings.checkpoint_timeout_seconds, 20
             )
 
-        playwright = open_playwright()
+        playwright = None
         browser = None
         found: list[dict[str, Any]] = []
         seen: set[str] = set()
         try:
+            playwright = open_playwright()
             _progress(on_progress, 6, "Opening LinkedIn...")
             browser, context = create_authenticated_context(playwright, settings)
             page = context.new_page()
@@ -1067,22 +1123,25 @@ def search_people_urls(
             _progress(on_progress, 96, "Finishing search...")
             page.close()
             context.close()
-        except RuntimeError:
-            raise
         except Exception as exc:
-            if _nav_failed(exc):
-                raise RuntimeError("LinkedIn took too long to load. Try again.") from None
-            raise RuntimeError("LinkedIn search failed. Try again.") from None
+            _progress(on_progress, 50, "Direct search restricted, running fallback discovery...")
+            found = _fallback_web_search_people(name, company, max_profiles=max_profiles)
+            if not found:
+                err_msg = str(exc)
+                if "checkpoint" in err_msg.lower() or "authwall" in err_msg.lower() or "login" in err_msg.lower():
+                    raise RuntimeError("LinkedIn requires human 2FA/Security Checkpoint verification on Cloud IP servers.") from None
+                raise RuntimeError(f"LinkedIn candidate search notice: {exc}") from None
         finally:
             if browser is not None:
                 try:
                     browser.close()
                 except Exception:
                     pass
-            try:
-                playwright.stop()
-            except Exception:
-                pass
+            if playwright is not None:
+                try:
+                    playwright.stop()
+                except Exception:
+                    pass
         return found
 
 
