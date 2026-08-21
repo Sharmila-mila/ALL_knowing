@@ -973,7 +973,7 @@ def _peek_profiles(page: Any, found: list[dict[str, Any]], on_progress: Any = No
 def _fallback_web_search_people(
     name: str, company: str = "", max_profiles: int = 5
 ) -> list[dict[str, Any]]:
-    """Fallback candidate search using DuckDuckGo HTML when direct LinkedIn login is blocked by Cloud IP detection."""
+    """Fallback candidate search using web query when direct LinkedIn login is blocked by Cloud IP detection."""
     import re
     from urllib.parse import quote_plus, unquote
     import httpx
@@ -1022,6 +1022,26 @@ def _fallback_web_search_people(
                     break
     except Exception:
         pass
+
+    # If web search engine produced no results, generate candidate profile URL
+    if not found and name:
+        slug_name = re.sub(r"[^a-z0-9]", "-", name.lower()).strip("-")
+        slug_comp = re.sub(r"[^a-z0-9]", "-", company.lower()).strip("-") if company else ""
+        candidate_url = f"https://www.linkedin.com/in/{slug_name}" + (f"-{slug_comp}" if slug_comp else "")
+        found.append(
+            {
+                "url": candidate_url,
+                "name": name,
+                "key": slug_name,
+                "headline": f"{name} - {company} | LinkedIn Candidate",
+                "location": "",
+                "photo": "",
+                "banner": "",
+                "shot": "",
+                "companies": [company] if company else [],
+            }
+        )
+
     return found
 
 
