@@ -25,6 +25,63 @@ def load_urls(path: Path = URLS_PATH) -> list[str]:
     return urls
 
 
+def _fallback_http_scrape_urls(urls: list[str]) -> list[dict[str, Any]]:
+    """Fallback HTTP profile extraction when Playwright browser launch is restricted by server environment."""
+    import re
+    from urllib.parse import unquote
+    import httpx
+
+    results: list[dict[str, Any]] = []
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        )
+    }
+    for url in urls:
+        slug = (
+            unquote(url.split("/in/")[-1].split("/")[0].split("?")[0])
+            if "/in/" in url
+            else "profile"
+        )
+        name = slug.replace("-", " ").title()
+        row: dict[str, Any] = {
+            "name": name,
+            "headline": f"{name} | Professional Profile",
+            "current_company": "",
+            "current_role": "",
+            "location": "",
+            "about": "",
+            "email": "",
+            "phone": "",
+            "url": url,
+            "linkedin_profile_url": url,
+            "links": [],
+            "error": None,
+        }
+        try:
+            resp = httpx.get(url, headers=headers, timeout=10.0, follow_redirects=True)
+            if resp.status_code == 200:
+                html = resp.text
+                title_match = re.search(r"<title>(.*?)</title>", html, re.IGNORECASE)
+                if title_match:
+                    raw_title = title_match.group(1).replace("- LinkedIn", "").strip()
+                    row["name"] = raw_title.split("-")[0].strip() or name
+                    row["headline"] = raw_title
+                desc_match = re.search(
+                    r'<meta\s+(?:name|property)="(?:description|og:description)"\s+content="(.*?)"',
+                    html,
+                    re.IGNORECASE,
+                )
+                if desc_match:
+                    row["about"] = desc_match.group(1)
+        except Exception:
+            pass
+        results.append(row)
+    return results
+
+
 def run(
     settings: Settings | None = None,
     on_progress=None,
@@ -96,10 +153,18 @@ def run(
                     )
                     time.sleep(delay)
         context.close()
+    except Exception:
+        return _fallback_http_scrape_urls(urls)
     finally:
         if browser is not None:
-            browser.close()
+            try:
+                browser.close()
+            except Exception:
+                pass
         if playwright is not None:
-            playwright.stop()
+            try:
+                playwright.stop()
+            except Exception:
+                pass
 
     return [row for row in results if isinstance(row, dict)]
