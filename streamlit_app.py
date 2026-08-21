@@ -20,14 +20,24 @@ st.set_page_config(
 
 ROOT = Path(__file__).resolve().parent
 
-# Load environment variables from .env if present
-env_file = ROOT / ".env"
-if env_file.exists():
-    load_dotenv(env_file)
-else:
-    secrets_env = ROOT / "not to share" / ".env"
-    if secrets_env.exists():
-        load_dotenv(secrets_env)
+import subprocess
+
+# Auto-ensure Playwright Chromium is installed for Streamlit Cloud
+def _ensure_playwright_chromium():
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            p.chromium.launch(headless=True).close()
+    except Exception as exc:
+        err = str(exc).lower()
+        if "executable" in err or "installed" in err or "chromium" in err or "browser" in err:
+            try:
+                subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=False)
+            except Exception:
+                pass
+
+_ensure_playwright_chromium()
+
 
 
 @contextmanager
