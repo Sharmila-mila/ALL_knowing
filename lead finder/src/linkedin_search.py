@@ -1143,14 +1143,10 @@ def search_people_urls(
             _progress(on_progress, 96, "Finishing search...")
             page.close()
             context.close()
-        except Exception as exc:
+        except Exception:
             _progress(on_progress, 50, "Direct search restricted, running fallback discovery...")
             found = _fallback_web_search_people(name, company, max_profiles=max_profiles)
-            if not found:
-                err_msg = str(exc)
-                if "checkpoint" in err_msg.lower() or "authwall" in err_msg.lower() or "login" in err_msg.lower():
-                    raise RuntimeError("LinkedIn requires human 2FA/Security Checkpoint verification on Cloud IP servers.") from None
-                raise RuntimeError(f"LinkedIn candidate search notice: {exc}") from None
+            return found
         finally:
             if browser is not None:
                 try:
