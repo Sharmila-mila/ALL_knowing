@@ -868,7 +868,22 @@ elif navigation == "⚙️ Settings":
     st.divider()
 
     with st.form("settings_form"):
-        st.subheader("🔐 API Credentials")
+        st.subheader("🔐 API & LinkedIn Credentials")
+
+        li_email = st.text_input(
+            "LinkedIn Account Email:",
+            value=os.getenv("LINKEDIN_EMAIL", ""),
+            placeholder="your_linkedin_email@domain.com",
+            help="Used for LinkedIn candidate searching & profile scraping.",
+        )
+        li_pass = st.text_input(
+            "LinkedIn Account Password:",
+            value=os.getenv("LINKEDIN_PASSWORD", ""),
+            type="password",
+            help="Used for authenticating browser sessions on LinkedIn.",
+        )
+
+        st.divider()
 
         groq_key = st.text_input(
             "Groq API Key:",
@@ -927,6 +942,8 @@ elif navigation == "⚙️ Settings":
         save_settings = st.form_submit_button("💾 Save Environment Settings")
 
     if save_settings:
+        os.environ["LINKEDIN_EMAIL"] = li_email.strip()
+        os.environ["LINKEDIN_PASSWORD"] = li_pass.strip()
         os.environ["GROQ_API_KEY"] = groq_key.strip()
         os.environ["FINNHUB_API_KEY"] = finnhub_key.strip()
         os.environ["ALPHA_VANTAGE_API_KEY"] = av_key.strip()
