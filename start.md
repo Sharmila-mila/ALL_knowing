@@ -85,6 +85,10 @@ GROQ_API_KEY=
 GROQ_MODEL=
 NEWS_GROQ_MODEL=
 GITHUB_TOKEN=
+<<<<<<< HEAD
+=======
+TRACXN_ACCESS_TOKEN=
+>>>>>>> origin/backend
 LINKEDIN_EMAIL=
 LINKEDIN_PASSWORD=
 SUPABASE_URL=
@@ -165,6 +169,14 @@ Do not ask the user to commit anything under `not to share/`.
 | Fix DB read/write | `web scraper/src/store.py` |
 | Fix schema | `supabase/schema.sql` |
 
+Optional company enrichment keys (all skip or scrape if missing):
+
+- `TRACXN_ACCESS_TOKEN` — funding, investors, competitors. Without it, Tracxn is skipped.
+- Trustpilot — public review page is scraped by domain (no API key).
+- Zauba — public Zauba Corp pages are scraped for Indian companies (CIN, directors, address).
+- Justdial has no public API; Indian companies are looked up on public listing pages (ratings, visible phone, address).
+
+Zauba and Justdial run only when the company looks India-related. Bookmark lite refresh still runs Zauba for India and skips Tracxn/Justdial/Trustpilot.
 ---
 
 ## Main user flows (know these before debugging)

@@ -1,0 +1,2042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lead Intelligence — AI Powered B2B SaaS Platform</title>
+
+  <!-- Google Fonts Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: '#FFFFFF',
+            secondary: '#F8FAFC',
+            card: '#FFFFFF',
+            border: '#E5E7EB',
+            heading: '#111827',
+            body: '#6B7280',
+            primary: {
+              DEFAULT: '#0EA5E9',
+              hover: '#0284C7',
+              light: '#F0F9FF',
+            },
+            success: '#16A34A',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          borderRadius: {
+            '2xl': '20px',
+            '3xl': '24px',
+          },
+          boxShadow: {
+            soft: '0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02)',
+            'soft-lg': '0 10px 30px -4px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.03)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18, React-DOM, Lucide React, Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+    .animate-float { animation: float 5s ease-in-out infinite; }
+  </style>
+</head>
+<body class="bg-white text-[#111827] font-sans antialiased selection:bg-[#0EA5E9]/20">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const API_BASE = 'http://127.0.0.1:5000';
+
+    async function fetchHealth() {
+      try {
+        const res = await fetch(`${API_BASE}/api/health`);
+        if (!res.ok) throw new Error();
+        return await res.json();
+      } catch (err) {
+        return { status: 'offline', supabase_connected: false };
+      }
+    }
+
+    // UI Components
+    function Button({ children, variant = 'primary', size = 'md', className = '', onClick, disabled, loading }) {
+      const base = 'inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none rounded-2xl active:scale-[0.98]';
+      const variants = {
+        primary: 'bg-[#0EA5E9] hover:bg-[#0284C7] text-white shadow-sm hover:shadow-md',
+        secondary: 'bg-[#F8FAFC] hover:bg-slate-100 text-[#111827] border border-[#E5E7EB]',
+        outline: 'bg-transparent border border-[#E5E7EB] hover:border-slate-300 text-[#111827] hover:bg-slate-50',
+        ghost: 'bg-transparent hover:bg-slate-100 text-[#6B7280] hover:text-[#111827]',
+      };
+      const sizes = {
+        sm: 'text-xs px-3 py-1.5 gap-1.5',
+        md: 'text-sm px-4 py-2.5 gap-2',
+        lg: 'text-base px-6 py-3.5 gap-2.5',
+      };
+      return (
+        <button className={`${base} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`} onClick={onClick} disabled={disabled || loading}>
+          {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" /> : null}
+          {children}
+        </button>
+      );
+    }
+
+    function Badge({ children, variant = 'primary' }) {
+      const variants = {
+        primary: 'bg-[#F0F9FF] text-[#0EA5E9] border border-sky-100',
+        secondary: 'bg-[#F8FAFC] text-[#6B7280] border border-[#E5E7EB]',
+        success: 'bg-emerald-50 text-[#16A34A] border border-emerald-100',
+      };
+      return (
+        <span className={`inline-flex items-center gap-1 font-medium rounded-full text-xs px-3 py-1 ${variants[variant] || variants.primary}`}>
+          {children}
+        </span>
+      );
+    }
+
+    function Card({ children, className = '', hoverable = false, ...props }) {
+      return (
+        <div className={`bg-white rounded-2xl border border-[#E5E7EB] p-6 transition-all duration-200 ${hoverable ? 'hover:border-slate-300 hover:shadow-soft' : 'shadow-sm'} ${className}`} {...props}>
+          {children}
+        </div>
+      );
+    }
+
+    function Input({ label, placeholder, value, onChange, type = 'text', className = '' }) {
+      return (
+        <div className="w-full">
+          {label && <label className="block text-xs font-semibold text-[#111827] uppercase tracking-wider mb-2">{label}</label>}
+          <input
+            type={type}
+            placeholder={placeholder}
+            value={value}
+            onChange={onChange}
+            className={`w-full bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl py-2.5 px-4 text-sm text-[#111827] placeholder-[#6B7280] focus:outline-none focus:border-[#0EA5E9] focus:ring-2 focus:ring-[#0EA5E9]/20 transition-all ${className}`}
+          />
+        </div>
+      );
+    }
+
+    // LANDING SECTIONS
+    function LandingNavbar({ onLaunch }) {
+      return (
+        <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-[#E5E7EB] px-6 py-4">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={onLaunch}>
+              <div className="w-10 h-10 rounded-2xl bg-[#0EA5E9] flex items-center justify-center text-white font-bold text-sm tracking-tight shadow-sm">LI</div>
+              <span className="text-xl font-bold tracking-tight text-[#111827]">
+                Lead Intelligence <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#F0F9FF] text-[#0EA5E9] border border-sky-100 ml-1">AI</span>
+              </span>
+            </div>
+            <nav className="flex items-center gap-8 text-sm font-medium text-[#6B7280]">
+              <a href="#home" className="hover:text-[#111827]">Home</a>
+              <a href="#features" className="hover:text-[#111827]">Features</a>
+              <button onClick={onLaunch} className="hover:text-[#111827]">Dashboard</button>
+            </nav>
+            <Button variant="primary" size="sm" onClick={onLaunch}>Get Started</Button>
+          </div>
+        </header>
+      );
+    }
+
+    function LandingHero({ onLaunch }) {
+      return (
+        <section id="home" className="relative pt-16 pb-24 px-6 bg-white">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <div className="lg:col-span-7 space-y-6">
+              <Badge variant="primary">AI Powered Lead Intelligence</Badge>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#111827] tracking-tight leading-[1.1]">
+                FIND COMPANIES. DISCOVER DECISION MAKERS. <span className="text-[#0EA5E9]">CLOSE DEALS FASTER.</span>
+              </h1>
+              <p className="text-lg text-[#6B7280] leading-relaxed max-w-xl">
+                Lead Intelligence helps sales teams, recruiters, founders, and researchers discover company intelligence, financial insights, executive profiles, and verified B2B leads from one intelligent platform.
+              </p>
+              <div className="flex flex-wrap items-center gap-4 pt-2">
+                <Button variant="primary" size="lg" onClick={onLaunch}>Get Started</Button>
+                <Button variant="outline" size="lg" onClick={onLaunch}>Explore Dashboard</Button>
+              </div>
+            </div>
+            <div className="lg:col-span-5 relative">
+              <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-soft-lg p-6 space-y-5 animate-float">
+                <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold">T</div>
+                    <div>
+                      <h3 className="font-bold text-[#111827]">Tesla, Inc.</h3>
+                      <p className="text-xs text-[#6B7280]">Automotive & Energy Systems</p>
+                    </div>
+                  </div>
+                  <Badge variant="success">AI Score: 98/100</Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl">
+                    <p className="text-xs text-[#6B7280]">Market Cap</p>
+                    <p className="text-lg font-bold text-[#111827] mt-0.5">$750.4B</p>
+                  </div>
+                  <div className="p-3.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl">
+                    <p className="text-xs text-[#6B7280]">Chief Executive</p>
+                    <p className="text-sm font-bold text-[#111827] mt-0.5">Elon Musk</p>
+                  </div>
+                </div>
+                <div className="p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl text-xs flex justify-between items-center">
+                  <span className="font-semibold text-[#111827]">Quarterly Growth</span>
+                  <span className="text-[#16A34A] font-bold">+18.4%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function Features() {
+      const feats = [
+        { title: 'Company Intelligence', desc: 'Generate complete company dossiers including industry, market cap, SEC filings, competitors, and business overview.' },
+        { title: 'Executive Discovery', desc: 'Identify founders, CEOs, HR leaders, and decision makers through intelligent LinkedIn enrichment.' },
+        { title: 'Financial Research', desc: 'Access revenue, valuation, market performance, company news, and AI-generated business summaries.' },
+        { title: 'Lead Export', desc: 'Export clean, structured prospect lists into CSV for outreach and CRM workflows.' },
+      ];
+      return (
+        <section id="features" className="py-24 px-6 bg-white border-t border-[#E5E7EB]">
+          <div className="max-w-7xl mx-auto space-y-16">
+            <div className="text-center max-w-2xl mx-auto space-y-4">
+              <h2 className="text-3xl font-extrabold text-[#111827]">Everything You Need to Scale Prospecting</h2>
+              <p className="text-base text-[#6B7280]">An intelligent workspace built for deep company research and decision-maker lead discovery.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {feats.map((f, i) => (
+                <Card key={i} hoverable className="space-y-4">
+                  <div className="w-10 h-10 rounded-2xl bg-[#F0F9FF] text-[#0EA5E9] font-bold flex items-center justify-center">0{i+1}</div>
+                  <h3 className="text-xl font-bold text-[#111827]">{f.title}</h3>
+                  <p className="text-sm text-[#6B7280]">{f.desc}</p>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function WhoUsesZuntra() {
+      const users = [
+        { title: 'Sales Teams', desc: 'Build highly qualified prospect lists.' },
+        { title: 'Recruiters', desc: 'Discover hiring companies and key decision makers.' },
+        { title: 'Founders', desc: 'Research competitors and investors.' },
+        { title: 'Market Researchers', desc: 'Analyze industries with real-time business intelligence.' },
+      ];
+      return (
+        <section className="py-24 px-6 bg-[#F8FAFC] border-y border-[#E5E7EB]">
+          <div className="max-w-7xl mx-auto space-y-16">
+            <div className="text-center max-w-2xl mx-auto space-y-4">
+              <h2 className="text-3xl font-extrabold text-[#111827]">Built for Modern Business Teams</h2>
+              <p className="text-base text-[#6B7280]">Empowering professionals across sales, hiring, leadership, and market research.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {users.map((u, i) => (
+                <Card key={i} hoverable className="space-y-4 bg-white">
+                  <div className="w-10 h-10 rounded-2xl bg-[#F0F9FF] text-[#0EA5E9] font-bold flex items-center justify-center">0{i+1}</div>
+                  <h3 className="text-xl font-bold text-[#111827]">{u.title}</h3>
+                  <p className="text-sm text-[#6B7280]">{u.desc}</p>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function HowItWorks() {
+      const steps = [
+        { step: 'Step 1', title: 'Search a company or email' },
+        { step: 'Step 2', title: 'AI generates a complete business profile' },
+        { step: 'Step 3', title: 'Find executives and verified contacts' },
+        { step: 'Step 4', title: 'Export leads and start outreach' },
+      ];
+      return (
+        <section className="py-24 px-6 bg-white border-b border-[#E5E7EB]">
+          <div className="max-w-7xl mx-auto space-y-16">
+            <div className="text-center max-w-2xl mx-auto space-y-4">
+              <h2 className="text-3xl font-extrabold text-[#111827]">Research to Lead in Four Steps</h2>
+              <p className="text-base text-[#6B7280]">A simple automated workflow from query to prospect list.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              {steps.map((s, i) => (
+                <Card key={i} className="space-y-4 bg-[#F8FAFC]">
+                  <div className="w-10 h-10 rounded-2xl bg-[#0EA5E9] text-white font-bold flex items-center justify-center">{i+1}</div>
+                  <div>
+                    <span className="text-xs font-bold text-[#0EA5E9] uppercase">{s.step}</span>
+                    <h3 className="text-base font-bold text-[#111827] mt-1">{s.title}</h3>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function WhyZuntra() {
+      const checks = ['Company Dossiers', 'Executive Lookup', 'Financial Analytics', 'SEC Filings', 'AI News Intelligence', 'CSV Export'];
+      return (
+        <section className="py-24 px-6 bg-white">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <div className="lg:col-span-6 space-y-6">
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#111827]">One Workspace. Complete Lead Intelligence.</h2>
+              <p className="text-base text-[#6B7280] leading-relaxed">
+                Replace fragmented tools with Lead Intelligence. Consolidate company analysis, executive discovery, market news, and financial intelligence into one unified platform.
+              </p>
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                {checks.map((c, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm font-semibold text-[#111827]">
+                    <span className="text-[#16A34A] font-bold">✔</span> {c}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="lg:col-span-6">
+              <Card className="bg-[#F8FAFC] p-8 space-y-6">
+                <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-[#0EA5E9] text-white font-bold flex items-center justify-center">N</div>
+                    <div>
+                      <h4 className="font-bold text-[#111827]">Nvidia Corp. (NVDA)</h4>
+                      <p className="text-xs text-[#6B7280]">Semiconductors & AI • NASDAQ</p>
+                    </div>
+                  </div>
+                  <Badge variant="success">Market Cap: $2.15T</Badge>
+                </div>
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="p-3 bg-white border rounded-2xl">
+                    <p className="text-xs text-[#6B7280]">P/E Ratio</p>
+                    <p className="text-sm font-bold text-[#111827] mt-1">68.4</p>
+                  </div>
+                  <div className="p-3 bg-white border rounded-2xl">
+                    <p className="text-xs text-[#6B7280]">AI Score</p>
+                    <p className="text-sm font-bold text-[#16A34A] mt-1">99/100</p>
+                  </div>
+                  <div className="p-3 bg-white border rounded-2xl">
+                    <p className="text-xs text-[#6B7280]">Decision Makers</p>
+                    <p className="text-sm font-bold text-[#111827] mt-1">18 Verified</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function LandingCTA({ onLaunch }) {
+      return (
+        <section className="py-20 px-6 bg-gradient-to-b from-white to-[#F8FAFC]">
+          <div className="max-w-5xl mx-auto bg-white border border-[#E5E7EB] rounded-3xl p-10 md:p-14 text-center space-y-6 shadow-soft-lg relative overflow-hidden">
+            <div className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-[#0EA5E9]/5 blur-3xl pointer-events-none"></div>
+            <div className="absolute -left-16 -bottom-16 w-56 h-56 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none"></div>
+
+            <Badge variant="primary">Next-Generation Prospecting</Badge>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#111827] tracking-tight max-w-2xl mx-auto leading-tight">
+              Ready to Accelerate Your Lead Intelligence Pipeline?
+            </h2>
+            <p className="text-base sm:text-lg text-[#6B7280] max-w-2xl mx-auto leading-relaxed">
+              Start researching companies, analyzing SEC filings, and uncovering high-impact executive decision makers in seconds.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+              <Button variant="primary" size="lg" onClick={onLaunch} className="shadow-md">
+                Launch Intelligence Workspace →
+              </Button>
+              <a href="/api/health" target="_blank" rel="noopener noreferrer">
+                <Button variant="secondary" size="lg">
+                  View System Diagnostics
+                </Button>
+              </a>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function LandingFooter({ onLaunch }) {
+      const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      return (
+        <footer className="bg-white border-t border-[#E5E7EB] text-[#111827]">
+          {/* Main Footer Links */}
+          <div className="max-w-7xl mx-auto px-6 pt-16 pb-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8">
+              {/* Brand Col */}
+              <div className="lg:col-span-2 space-y-4">
+                <div className="flex items-center gap-3 cursor-pointer" onClick={scrollToTop}>
+                  <div className="w-10 h-10 rounded-2xl bg-[#0EA5E9] text-white font-bold flex items-center justify-center text-sm tracking-tight shadow-sm">LI</div>
+                  <span className="text-xl font-bold tracking-tight text-[#111827]">
+                    Lead Intelligence <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#F0F9FF] text-[#0EA5E9] border border-sky-100 ml-1">AI</span>
+                  </span>
+                </div>
+                <p className="text-sm text-[#6B7280] leading-relaxed max-w-sm">
+                  Autonomous enterprise lead intelligence platform. Consolidating SEC filings, financial ratios, executive LinkedIn profiles, and live market signals into actionable dossiers.
+                </p>
+                <div className="pt-2 flex items-center gap-3">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-700">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Systems Operational
+                  </div>
+                  <span className="text-xs text-[#6B7280]">v2.4 Enterprise</span>
+                </div>
+              </div>
+
+              {/* Product Col */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#111827]">Platform</h4>
+                <ul className="space-y-2 text-sm text-[#6B7280]">
+                  <li>
+                    <button onClick={onLaunch} className="hover:text-[#0EA5E9] transition-colors text-left">
+                      Company Intelligence
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={onLaunch} className="hover:text-[#0EA5E9] transition-colors text-left">
+                      Executive Lookup
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={onLaunch} className="hover:text-[#0EA5E9] transition-colors text-left">
+                      Lead Investigation
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={onLaunch} className="hover:text-[#0EA5E9] transition-colors text-left">
+                      Financial Analytics
+                    </button>
+                  </li>
+                  <li>
+                    <button onClick={onLaunch} className="hover:text-[#0EA5E9] transition-colors text-left">
+                      Tracked Companies
+                    </button>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Data Sources Col */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#111827]">Intelligence Stack</h4>
+                <ul className="space-y-2 text-sm text-[#6B7280]">
+                  <li className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0EA5E9]"></span>
+                    <span>SEC EDGAR Filings</span>
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0EA5E9]"></span>
+                    <span>Finnhub & Alpha Vantage</span>
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0EA5E9]"></span>
+                    <span>Playwright Chromium</span>
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0EA5E9]"></span>
+                    <span>Groq Llama 3.3 70B</span>
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0EA5E9]"></span>
+                    <span>Supabase PostgreSQL</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Resources Col */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#111827]">Resources</h4>
+                <ul className="space-y-2 text-sm text-[#6B7280]">
+                  <li>
+                    <a href="/api/health" target="_blank" rel="noopener noreferrer" className="hover:text-[#0EA5E9] transition-colors">
+                      API Health Endpoint
+                    </a>
+                  </li>
+                  <li>
+                    <button onClick={onLaunch} className="hover:text-[#0EA5E9] transition-colors text-left">
+                      Workspace Dashboard
+                    </button>
+                  </li>
+                  <li>
+                    <a href="#features" className="hover:text-[#0EA5E9] transition-colors">
+                      Platform Capabilities
+                    </a>
+                  </li>
+                  <li>
+                    <button onClick={() => window.open('https://www.zuntra.com/', '_blank', 'noopener,noreferrer')} className="hover:text-[#0EA5E9] transition-colors text-left">
+                      Zuntra Official Portal ↗
+                    </button>
+                  </li>
+                  <li>
+                    <span className="text-xs text-[#9CA3AF]">Chrome Extension (MV3)</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Sub-bar / Compliance & Security */}
+            <div className="mt-12 pt-8 border-t border-[#E5E7EB] grid grid-cols-1 md:grid-cols-2 gap-4 items-center text-xs text-[#6B7280]">
+              <div className="flex flex-wrap items-center gap-y-2 gap-x-6">
+                <span>© 2026 Zuntra Lead Intelligence. All rights reserved.</span>
+                <span className="hidden md:inline text-slate-300">|</span>
+                <span>Privacy First Architecture</span>
+                <span>•</span>
+                <span>Local Subprocess Execution</span>
+              </div>
+              <div className="flex items-center md:justify-end gap-6">
+                <button onClick={scrollToTop} className="hover:text-[#0EA5E9] transition-colors font-medium flex items-center gap-1">
+                  Back to top ↑
+                </button>
+              </div>
+            </div>
+          </div>
+        </footer>
+      );
+    }
+
+    // MAIN APP WORKSPACE
+    const DEFAULT_COMPANIES = {
+      'tesla': {
+        key: 'tesla',
+        name: 'Tesla, Inc.',
+        ticker: 'TSLA',
+        industry: 'Automotive & Clean Energy',
+        marketCap: '$750.4B',
+        revenue: '$96.77B',
+        peRatio: '42.8',
+        ceo: 'Elon Musk',
+        range: '$138 - $271',
+        description: 'Tesla designs, manufactures, and sells high-performance electric vehicles, solar energy systems, utility-scale battery storage (Megapack), and autonomous AI computing infrastructure.',
+        exchange: 'NASDAQ',
+        aiScore: '98/100',
+        employees: '140,473',
+        headquarters: 'Austin, Texas, USA',
+        website: 'https://www.tesla.com',
+        linkedinUrl: 'https://www.linkedin.com/company/tesla-motors/',
+        linkedinFollowers: '12,850,000',
+        linkedinMembers: '140,473',
+        companySize: '10,001+ employees',
+        hiringStatus: 'Active Hiring',
+        companyType: 'Public Company',
+        netIncome: '$15.0B',
+        products: [
+          'Model S, Model 3, Model X, Model Y, Cybertruck',
+          'Tesla Energy (Megapack, Powerwall, Solar Roof)',
+          'Full Self-Driving (FSD) Supercomputing & Optimus Robotics'
+        ],
+        executives: [
+          { name: 'Elon Musk', title: 'Chief Executive Officer & Technoking', email: 'e.musk@tesla.com', phone: '+1 (800) 613-8840', linkedin: 'https://www.linkedin.com/in/elonmusk/' },
+          { name: 'Robyn Denholm', title: 'Chairwoman of the Board', email: 'r.denholm@tesla.com', phone: '+1 (800) 613-8841', linkedin: 'https://www.linkedin.com/in/robyn-denholm/' },
+          { name: 'Vaibhav Taneja', title: 'Chief Financial Officer', email: 'v.taneja@tesla.com', phone: '+1 (800) 613-8842', linkedin: 'https://www.linkedin.com/in/vaibhav-taneja-tesla/' },
+          { name: 'Tom Zhu', title: 'Senior Vice President, Automotive', email: 't.zhu@tesla.com', phone: '+1 (800) 613-8843', linkedin: 'https://www.linkedin.com/in/tom-zhu-tesla/' }
+        ],
+        filings: []
+      },
+      'apple': {
+        key: 'apple',
+        name: 'Apple Inc.',
+        ticker: 'AAPL',
+        industry: 'Consumer Electronics & Software',
+        marketCap: '$2.89T',
+        revenue: '$383.29B',
+        peRatio: '31.2',
+        ceo: 'Tim Cook',
+        range: '$164 - $237',
+        description: 'Apple designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories, along with digital services including Apple Pay, iCloud, and App Store.',
+        exchange: 'NASDAQ',
+        aiScore: '96/100',
+        employees: '161,000',
+        headquarters: 'Cupertino, California, USA',
+        website: 'https://www.apple.com',
+        linkedinUrl: 'https://www.linkedin.com/company/apple/',
+        linkedinFollowers: '18,400,000',
+        linkedinMembers: '161,000',
+        companySize: '10,001+ employees',
+        hiringStatus: 'Active Hiring',
+        companyType: 'Public Company',
+        netIncome: '$97.0B',
+        products: [
+          'iPhone, Mac, iPad, Apple Watch, AirPods, Vision Pro',
+          'iOS, macOS, iPadOS, watchOS, iCloud Services',
+          'Apple Music, Apple TV+, Apple Pay enterprise ecosystem'
+        ],
+        executives: [
+          { name: 'Tim Cook', title: 'Chief Executive Officer', email: 'tcook@apple.com', phone: '+1 (408) 996-1010', linkedin: 'https://www.linkedin.com/in/tim-cook-apple/' },
+          { name: 'Luca Maestri', title: 'Chief Financial Officer', email: 'lmaestri@apple.com', phone: '+1 (408) 996-1011', linkedin: 'https://www.linkedin.com/in/luca-maestri-apple/' },
+          { name: 'Jeff Williams', title: 'Chief Operating Officer', email: 'jwilliams@apple.com', phone: '+1 (408) 996-1012', linkedin: 'https://www.linkedin.com/in/jeff-williams-apple/' },
+          { name: 'Deirdre O\'Brien', title: 'Senior Vice President, Retail & People', email: 'dobrien@apple.com', phone: '+1 (408) 996-1013', linkedin: 'https://www.linkedin.com/in/deirdre-obrien-apple/' }
+        ],
+        filings: []
+      },
+      'nvidia': {
+        key: 'nvidia',
+        name: 'Nvidia Corp.',
+        ticker: 'NVDA',
+        industry: 'Semiconductors & AI Hardware',
+        marketCap: '$2.15T',
+        revenue: '$60.92B',
+        peRatio: '68.4',
+        ceo: 'Jensen Huang',
+        range: '$45 - $140',
+        description: 'NVIDIA is the global leader in GPU-accelerated computing, AI supercomputing hardware (H100, Blackwell), autonomous driving platforms, and enterprise AI software stacks.',
+        exchange: 'NASDAQ',
+        aiScore: '99/100',
+        employees: '29,600',
+        headquarters: 'Santa Clara, California, USA',
+        website: 'https://www.nvidia.com',
+        linkedinUrl: 'https://www.linkedin.com/company/nvidia/',
+        linkedinFollowers: '5,600,000',
+        linkedinMembers: '29,600',
+        companySize: '10,001+ employees',
+        hiringStatus: 'Active Hiring',
+        companyType: 'Public Company',
+        netIncome: '$29.7B',
+        products: [
+          'Blackwell B200, Hopper H100 & Tensor Core GPUs',
+          'NVIDIA CUDA, AI Enterprise & Omniverse platform',
+          'DRIVE Thor Autonomous Vehicle Infrastructure'
+        ],
+        executives: [
+          { name: 'Jensen Huang', title: 'Founder & Chief Executive Officer', email: 'jhuang@nvidia.com', phone: '+1 (408) 486-2000', linkedin: 'https://www.linkedin.com/in/jensen-huang-nvidia/' },
+          { name: 'Colette Kress', title: 'Executive VP & Chief Financial Officer', email: 'ckress@nvidia.com', phone: '+1 (408) 486-2001', linkedin: 'https://www.linkedin.com/in/colette-kress-nvidia/' },
+          { name: 'Jay Puri', title: 'Executive VP, Worldwide Field Operations', email: 'jpuri@nvidia.com', phone: '+1 (408) 486-2002', linkedin: 'https://www.linkedin.com/in/jay-puri-nvidia/' }
+        ],
+        filings: []
+      },
+      'microsoft': {
+        key: 'microsoft',
+        name: 'Microsoft Corp.',
+        ticker: 'MSFT',
+        industry: 'Software & Cloud Solutions',
+        marketCap: '$3.12T',
+        revenue: '$227.58B',
+        peRatio: '35.6',
+        ceo: 'Satya Nadella',
+        range: '$309 - $468',
+        description: 'Microsoft develops and supports software, cloud computing services (Azure), enterprise AI solutions (Copilot), personal electronics, and productivity platforms.',
+        exchange: 'NASDAQ',
+        aiScore: '97/100',
+        employees: '221,000',
+        headquarters: 'Redmond, Washington, USA',
+        website: 'https://www.microsoft.com',
+        linkedinUrl: 'https://www.linkedin.com/company/microsoft/',
+        linkedinFollowers: '22,100,000',
+        linkedinMembers: '221,000',
+        companySize: '10,001+ employees',
+        hiringStatus: 'Active Hiring',
+        companyType: 'Public Company',
+        netIncome: '$72.4B',
+        products: [
+          'Microsoft Azure, Microsoft 365, Dynamics 365',
+          'Microsoft Copilot AI & Azure OpenAI Services',
+          'Windows OS, Xbox Gaming & Surface Hardware'
+        ],
+        executives: [
+          { name: 'Satya Nadella', title: 'Chairman & Chief Executive Officer', email: 'satyan@microsoft.com', phone: '+1 (425) 882-8080', linkedin: 'https://www.linkedin.com/in/satyanadella/' },
+          { name: 'Amy Hood', title: 'Chief Financial Officer & Executive VP', email: 'ahood@microsoft.com', phone: '+1 (425) 882-8081', linkedin: 'https://www.linkedin.com/in/amy-hood-msft/' },
+          { name: 'Brad Smith', title: 'Vice Chair & President', email: 'bsmith@microsoft.com', phone: '+1 (425) 882-8082', linkedin: 'https://www.linkedin.com/in/brad-smith-msft/' },
+          { name: 'Judson Althoff', title: 'Executive Vice President & Chief Commercial Officer', email: 'jalthoff@microsoft.com', phone: '+1 (425) 882-8083', linkedin: 'https://www.linkedin.com/in/judsonalthoff/' }
+        ],
+        filings: []
+      },
+      'zuntra digital': {
+        key: 'zuntra digital',
+        name: 'Zuntra Digital',
+        ticker: null,
+        industry: 'Enterprise AI & Software Development',
+        marketCap: null,
+        revenue: null,
+        peRatio: null,
+        ceo: 'Roopini Soundaria',
+        range: null,
+        description: 'Zuntra is a software development company building AI-powered products and enterprise solutions for businesses and creators. We combine software engineering, AI, and experience design to build future-ready systems.',
+        exchange: null,
+        aiScore: '96/100',
+        employees: '54',
+        headquarters: 'Developed Plot Estate, Plot No 61, Perungudi, Saidapet, Kanchipuram, Tamil Nadu, 600096-India',
+        website: 'https://www.zuntra.com/',
+        linkedinUrl: 'https://www.linkedin.com/company/zuntra-digital/',
+        linkedinFollowers: '4,978',
+        linkedinMembers: '54',
+        companySize: '11-50 employees',
+        hiringStatus: 'Active Hiring',
+        companyType: 'Privately Held',
+        netIncome: null,
+        products: [
+          'Huzzler — AI-powered talent platform connecting businesses with freelance talent',
+          'Zuntra Lead Intelligence — Enterprise sales & company dossier engine',
+          'AI-assisted workflow automation & custom software solutions'
+        ],
+        executives: [
+          { name: 'Roopini Soundaria', title: 'Director & Managing Founder', email: 'roopini@zuntradigital.com', phone: '+91 98401 23456', linkedin: 'https://www.linkedin.com/in/roopini-soundaria/' },
+          { name: 'Indraneel Chowdary Yalamanchili', title: 'Director & Co-Founder', email: 'indraneel@zuntradigital.com', phone: '+91 98401 23457', linkedin: 'https://www.linkedin.com/in/indraneel-chowdary/' },
+          { name: 'Denise Ranjeet Chandran', title: 'Director & Chief Operating Officer', email: 'denise@zuntradigital.com', phone: '+91 98401 23458', linkedin: 'https://www.linkedin.com/in/denise-ranjeet-chandran/' }
+        ],
+        filings: []
+      }
+    };
+
+    const cleanEmail = (raw) => {
+      if (!raw) return null;
+      const s = String(raw).trim();
+      if (!s) return null;
+      if (
+        /@company\.com$/i.test(s) ||
+        s.toLowerCase().includes('company.com') ||
+        s.toLowerCase().includes('example.com') ||
+        s.toLowerCase().includes('domain.com') ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)
+      ) {
+        return null;
+      }
+      return s;
+    };
+
+    const formatPhone = (raw) => {
+      if (!raw) return null;
+      const s = String(raw).trim();
+      if (!s || /company\.com/i.test(s) || /incomplete/i.test(s)) return null;
+
+      const digits = s.replace(/\D/g, '');
+      if (digits.length < 10 || digits.length > 15) return null;
+
+      const hasPlus = s.startsWith('+');
+
+      if (hasPlus && digits.startsWith('91') && digits.length === 12) {
+        return `+91 ${digits.slice(2, 7)} ${digits.slice(7)}`;
+      }
+      if (!hasPlus && digits.length === 10 && /^[6-9]/.test(digits)) {
+        return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
+      }
+
+      if (hasPlus && digits.startsWith('1') && digits.length === 11) {
+        return `+1 ${digits.slice(1, 4)} ${digits.slice(4, 7)} ${digits.slice(7)}`;
+      }
+      if (!hasPlus && digits.length === 10) {
+        return `+1 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+      }
+
+      if (hasPlus) {
+        if (digits.length > 10) {
+          const ccLen = digits.length - 10;
+          return `+${digits.slice(0, ccLen)} ${digits.slice(ccLen, ccLen + 5)} ${digits.slice(ccLen + 5)}`;
+        }
+        return `+${digits}`;
+      }
+
+      return `+${digits.slice(0, digits.length - 10)} ${digits.slice(digits.length - 10, digits.length - 5)} ${digits.slice(digits.length - 5)}`;
+    };
+
+    const cleanLinkedIn = (raw) => {
+      if (!raw) return null;
+      const s = String(raw).trim();
+      if (!s || s === '#' || !s.toLowerCase().includes('linkedin.com')) return null;
+
+      const cleanDisplay = s
+        .replace(/^https?:\/\//i, '')
+        .replace(/^www\./i, '')
+        .replace(/\/$/, '')
+        .split('?')[0];
+
+      const fullUrl = /^https?:\/\//i.test(s) ? s : `https://${s}`;
+      return { display: cleanDisplay, href: fullUrl };
+    };
+
+    const ensureUrl = (raw) => {
+      if (!raw) return null;
+      let s = String(raw).trim();
+      if (!s || s === '#' || s.toLowerCase() === 'null') return null;
+      if (!/^https?:\/\//i.test(s)) s = `https://${s}`;
+      return s;
+    };
+
+    function AppWorkspace({ onReturnHome }) {
+      const [tab, setTab] = useState('dashboard');
+      const [companies, setCompanies] = useState(DEFAULT_COMPANIES);
+      const [activeCompanyKey, setActiveCompanyKey] = useState('tesla');
+      const [companyQuery, setCompanyQuery] = useState('');
+      const [globalSearch, setGlobalSearch] = useState('');
+      const [leadEmail, setLeadEmail] = useState('');
+      const [leadCompany, setLeadCompany] = useState('');
+      const [leadDomain, setLeadDomain] = useState('');
+      const [leadLoading, setLeadLoading] = useState(false);
+      const [leadResult, setLeadResult] = useState(null);
+      const [leadError, setLeadError] = useState('');
+
+      const [personName, setPersonName] = useState('');
+      const [peopleLoading, setPeopleLoading] = useState(false);
+      const [peopleResults, setPeopleResults] = useState(null);
+      const [peopleError, setPeopleError] = useState('');
+      const [bookmarks, setBookmarks] = useState(['tesla', 'apple', 'nvidia']);
+      const [searchLoading, setSearchLoading] = useState(false);
+
+      const handleLeadInvestigateSubmit = async (e) => {
+        if (e) e.preventDefault();
+        const targetEmail = leadEmail.trim();
+        if (!targetEmail) return;
+
+        setLeadLoading(true);
+        setLeadError('');
+        setLeadResult(null);
+
+        try {
+          const res = await fetch('/api/lead/investigate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: targetEmail, max_profiles: 5 }),
+          });
+          const data = await res.json();
+
+          if (data && data.ok && data.result) {
+            setLeadResult(data.result);
+
+            const compData = data.result.company;
+            if (compData) {
+              const resData = compData.resolved || {};
+              const ov = compData.overview || {};
+              const fin = compData.financials || {};
+              const compName = resData.name || data.result.parsed?.company_hint || targetEmail.split('@')[1]?.split('.')[0];
+              const normKey = (compName || 'company').toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
+              const domainKey = (data.result.parsed?.domain || targetEmail.split('@')[1] || normKey).replace(/[^a-z0-9]/g, '');
+
+              const realExecs = (compData.executives || compData.leadership || compData.overview?.executives || compData.registry?.directors || []).map(ex => ({
+                name: ex.name,
+                title: ex.title || ex.role || ex.designation || 'Executive',
+                email: ex.email || null,
+                phone: ex.phone || null,
+                linkedin: ex.linkedin || ex.linkedin_url || null
+              })).filter(ex => ex.name);
+
+              const formattedComp = {
+                key: normKey,
+                name: compName,
+                ticker: resData.ticker || null,
+                industry: ov.industry || ov.sector || null,
+                marketCap: fin.market_cap ? (typeof fin.market_cap === 'number' ? `$${(fin.market_cap / 1e9).toFixed(1)}B` : String(fin.market_cap)) : null,
+                revenue: fin.revenue ? (typeof fin.revenue === 'number' ? `$${(fin.revenue / 1e9).toFixed(1)}B` : String(fin.revenue)) : null,
+                peRatio: fin.pe_ratio != null && fin.pe_ratio !== '' ? String(fin.pe_ratio) : null,
+                ceo: ov.ceo || null,
+                range: (fin.week_52_low && fin.week_52_high) ? `$${fin.week_52_low} - $${fin.week_52_high}` : (fin.range_52w || null),
+                description: ov.description || ov.short_description || `${compName} enterprise lead intelligence profile.`,
+                exchange: resData.exchanges?.[0] || null,
+                aiScore: null,
+                employees: ov.employees ? String(ov.employees) : null,
+                headquarters: ov.headquarters || null,
+                website: ov.website || null,
+                netIncome: fin.net_income ? (typeof fin.net_income === 'number' ? `$${(fin.net_income / 1e9).toFixed(1)}B` : String(fin.net_income)) : null,
+                products: compData.products || [],
+                executives: realExecs,
+                filings: Array.isArray(compData.filings) ? compData.filings : (Array.isArray(compData.sec_filings) ? compData.sec_filings : [])
+              };
+              setCompanies(prev => ({ ...prev, [normKey]: formattedComp }));
+            }
+          } else {
+            setLeadError(data.error || 'Unable to investigate lead email.');
+          }
+        } catch (err) {
+          setLeadError('Network error while investigating lead email.');
+        } finally {
+          setLeadLoading(false);
+        }
+      };
+
+      const exportLeadCSV = () => {
+        if (!leadResult) return;
+        const contacts = [];
+        const parsed = leadResult.parsed || {};
+        if (parsed.name_hint) {
+          contacts.push({
+            name: parsed.name_hint.toUpperCase(),
+            role: 'Primary Lead Target',
+            email: leadResult.query || leadEmail,
+            company: parsed.company_hint || ''
+          });
+        }
+        const compExecs = leadResult.company?.overview?.executives || leadResult.company?.executives || [];
+        compExecs.forEach(ex => {
+          contacts.push({
+            name: ex.name,
+            role: ex.title || ex.role || 'Executive',
+            email: ex.email || '',
+            company: leadResult.company?.resolved?.name || parsed.company_hint || ''
+          });
+        });
+        
+        const headers = 'Name,Role,Email,Company\n';
+        const rows = contacts.map(c => `"${c.name}","${c.role}","${c.email}","${c.company}"`).join('\n');
+        const blob = new Blob([headers + rows], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `lead-investigation-${parsed.domain || 'export'}.csv`;
+        a.click();
+      };
+
+      const handlePeopleLookupSubmit = async (e) => {
+        if (e) e.preventDefault();
+        const query = personName.trim();
+        if (!query) return;
+
+        setPeopleLoading(true);
+        setPeopleError('');
+        setPeopleResults(null);
+
+        try {
+          const res = await fetch('/api/linkedin/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: query, max_profiles: 6 }),
+          });
+          const data = await res.json();
+          if (data && data.ok) {
+            setPeopleResults(data.candidates || data.profiles || []);
+          } else {
+            setPeopleError(data.error || 'No executive profiles found.');
+          }
+        } catch (err) {
+          setPeopleError('Error performing people lookup.');
+        } finally {
+          setPeopleLoading(false);
+        }
+      };
+
+      useEffect(() => {
+        // Load cached bookmarks from localStorage first for instant UI response
+        try {
+          const cachedBm = localStorage.getItem('zuntra_bookmarks');
+          if (cachedBm) {
+            const parsed = JSON.parse(cachedBm);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setBookmarks(parsed);
+            }
+          }
+        } catch (e) {}
+
+        // Fetch official stored bookmarks & reports from Supabase backend
+        const syncBackendData = async () => {
+          try {
+            // 1. Fetch Stored Bookmarks
+            const bmRes = await fetch('/api/bookmarks');
+            const bmData = await bmRes.json();
+            if (bmData && bmData.ok && Array.isArray(bmData.bookmarks)) {
+              const loadedBms = bmData.bookmarks.map(b => b.toLowerCase());
+              setBookmarks(prev => Array.from(new Set([...prev, ...loadedBms])));
+              try { localStorage.setItem('zuntra_bookmarks', JSON.stringify(loadedBms)); } catch (e) {}
+            }
+
+            // 2. Fetch Stored Companies / Reports
+            const repRes = await fetch('/api/reports');
+            const repData = await repRes.json();
+            if (repData && repData.ok && Array.isArray(repData.reports) && repData.reports.length > 0) {
+              const loadedComps = {};
+              repData.reports.forEach(d => {
+                const resData = d.resolved || {};
+                const ov = d.overview || {};
+                const fin = d.financials || {};
+                const liIns = d.linkedin_insights || d.linkedin || {};
+                const compName = resData.name || ov.legal_name || d.query;
+                if (!compName) return;
+                const normKey = (d.key || compName).toLowerCase().trim();
+                const realExecs = (d.executives || d.leadership || ov.executives || d.registry?.directors || []).map(ex => ({
+                  name: ex.name,
+                  title: ex.title || ex.role || ex.designation || 'Executive',
+                  email: ex.email || null,
+                  phone: ex.phone || null,
+                  linkedin: ex.linkedin || ex.linkedin_url || null,
+                  avatar: ex.avatar || ex.photo || ex.image || null
+                })).filter(ex => ex.name);
+
+                const slugName = compName.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const derivedWebsite = ov.website || null;
+                const derivedLinkedin = d.linkedin_url || liIns.linkedin_url || ov.linkedin_url || `https://www.linkedin.com/company/${slugName}/`;
+
+                loadedComps[normKey] = {
+                  key: normKey,
+                  name: compName,
+                  ticker: resData.ticker || ov.ticker || d.ticker || null,
+                  industry: d.industry || ov.industry || ov.sector || liIns.industry || null,
+                  foundedYear: d.founded_year || ov.founded_year || ov.founded || liIns.founded_year || null,
+                  marketCap: fin.market_cap ? (typeof fin.market_cap === 'number' ? `$${(fin.market_cap / 1e9).toFixed(1)}B` : String(fin.market_cap)) : (d.market_cap ? String(d.market_cap) : null),
+                  revenue: fin.revenue ? (typeof fin.revenue === 'number' ? `$${(fin.revenue / 1e9).toFixed(1)}B` : String(fin.revenue)) : (d.annual_revenue ? String(d.annual_revenue) : null),
+                  peRatio: fin.pe_ratio != null && fin.pe_ratio !== '' ? String(fin.pe_ratio) : null,
+                  ceo: ov.ceo || null,
+                  range: (fin.week_52_low && fin.week_52_high) ? `$${fin.week_52_low} - $${fin.week_52_high}` : (fin.range_52w || null),
+                  description: ov.description || ov.short_description || liIns.description || d.description || `${compName} enterprise intelligence profile.`,
+                  exchange: resData.exchanges?.[0] || null,
+                  aiScore: '96/100',
+                  employees: d.employee_count || ov.employee_count || ov.employees || liIns.employee_count ? String(d.employee_count || ov.employee_count || ov.employees || liIns.employee_count) : null,
+                  employeeCount: d.employee_count || liIns.employee_count || ov.employee_count || ov.employees ? String(d.employee_count || liIns.employee_count || ov.employee_count || ov.employees) : null,
+                  headquarters: ov.headquarters || ov.address || liIns.headquarters || null,
+                  website: derivedWebsite,
+                  linkedinUrl: derivedLinkedin,
+                  linkedinFollowers: d.linkedin_followers || liIns.linkedin_followers || ov.linkedin_followers || null,
+                  linkedinMembers: d.linkedin_members || liIns.linkedin_members || ov.linkedin_members || null,
+                  companySize: d.company_size || liIns.company_size || ov.company_size || null,
+                  hiringStatus: d.hiring_status || liIns.hiring_status || ov.hiring_status || null,
+                  companyType: d.company_type || ov.company_type || liIns.company_type || (resData.ticker ? 'Public Company' : 'Privately Held'),
+                  companyLogo: d.company_logo || ov.company_logo || ov.logo_url || liIns.company_logo || null,
+                  netIncome: fin.net_income ? (typeof fin.net_income === 'number' ? `$${(fin.net_income / 1e9).toFixed(1)}B` : String(fin.net_income)) : (d.net_income ? String(d.net_income) : null),
+                  products: d.products || [],
+                  executives: realExecs,
+                  filings: Array.isArray(d.filings) ? d.filings : (Array.isArray(d.sec_filings) ? d.sec_filings : [])
+                };
+              });
+              setCompanies(prev => ({ ...prev, ...loadedComps }));
+            }
+          } catch (err) {
+            console.warn("Error syncing backend data:", err);
+          }
+        };
+
+        syncBackendData();
+      }, []);
+
+      const toggleBookmark = async (key) => {
+        if (!key) return;
+        const normKey = key.toLowerCase().trim();
+        const isBm = bookmarks.includes(normKey);
+        const newBookmarks = isBm
+          ? bookmarks.filter((k) => k !== normKey)
+          : [...bookmarks, normKey];
+
+        // 1. Update React state immediately
+        setBookmarks(newBookmarks);
+
+        // 2. Persist to localStorage for client durability
+        try {
+          localStorage.setItem('zuntra_bookmarks', JSON.stringify(newBookmarks));
+        } catch (e) {}
+
+        // 3. Persist to Supabase Database via API
+        try {
+          if (isBm) {
+            await fetch('/api/bookmarks', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ key: normKey })
+            });
+          } else {
+            await fetch('/api/bookmarks', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ key: normKey })
+            });
+          }
+          await fetch('/api/workspace', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookmarks: newBookmarks })
+          });
+        } catch (err) {
+          console.warn("Failed to persist bookmark to Supabase:", err);
+        }
+      };
+
+
+      const fetchCompanyDossier = async (q) => {
+        if (!q) return;
+        const normKey = q.toLowerCase().trim();
+        setSearchLoading(true);
+
+        // Check local cache first if complete data exists
+        if (companies[normKey] && Array.isArray(companies[normKey].executives) && companies[normKey].executives.length > 0 && companies[normKey].description && !companies[normKey].description.endsWith("enterprise intelligence profile.")) {
+          setActiveCompanyKey(normKey);
+          setCompanyQuery(companies[normKey].name);
+          setTab('company');
+          setSearchLoading(false);
+          return;
+        }
+
+        const domainKey = normKey.replace(/[^a-z0-9]/g, '');
+
+        try {
+          const res = await fetch(`/api/company`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: q, fast: false })
+          });
+          const data = await res.json();
+          if (data && data.ok && data.dossier) {
+            const d = data.dossier;
+            const resData = d.resolved || {};
+            const ov = d.overview || {};
+            const fin = d.financials || {};
+            const liIns = d.linkedin_insights || d.linkedin || {};
+            const compName = resData.name || ov.legal_name || q.charAt(0).toUpperCase() + q.slice(1);
+            const realExecs = (d.executives || d.leadership || ov.executives || d.registry?.directors || []).map(ex => ({
+              name: ex.name,
+              title: ex.title || ex.role || ex.designation || 'Executive',
+              email: ex.email || null,
+              phone: ex.phone || null,
+              linkedin: ex.linkedin || ex.linkedin_url || null,
+              avatar: ex.avatar || ex.photo || ex.image || null
+            })).filter(ex => ex.name);
+
+            const slugName = compName.toLowerCase().replace(/[^a-z0-9]/g, '');
+              const derivedWebsite = ensureUrl(ov.website || null);
+            const rawLiUrl = d.linkedin_url || liIns.linkedin_url || ov.linkedin_url;
+            const derivedLinkedin = (rawLiUrl && rawLiUrl.includes('linkedin.com/company/')) ? ensureUrl(rawLiUrl) : null;
+
+            const formattedComp = {
+              key: normKey,
+              name: compName,
+              ticker: resData.ticker || ov.ticker || d.ticker || null,
+              industry: d.industry || ov.industry || ov.sector || liIns.industry || null,
+              foundedYear: d.founded_year || ov.founded_year || ov.founded || liIns.founded_year || null,
+              marketCap: fin.market_cap ? (typeof fin.market_cap === 'number' ? `$${(fin.market_cap / 1e9).toFixed(1)}B` : String(fin.market_cap)) : (d.market_cap ? String(d.market_cap) : null),
+              revenue: fin.revenue ? (typeof fin.revenue === 'number' ? `$${(fin.revenue / 1e9).toFixed(1)}B` : String(fin.revenue)) : (d.annual_revenue ? String(d.annual_revenue) : null),
+              peRatio: fin.pe_ratio != null && fin.pe_ratio !== '' ? String(fin.pe_ratio) : null,
+              ceo: ov.ceo || null,
+              range: (fin.week_52_low && fin.week_52_high) ? `$${fin.week_52_low} - $${fin.week_52_high}` : (fin.range_52w || null),
+              description: ov.description || ov.short_description || liIns.description || d.description || `${compName} enterprise intelligence profile.`,
+              exchange: resData.exchanges?.[0] || null,
+              aiScore: '96/100',
+              employees: d.employee_count || ov.employee_count || ov.employees || liIns.employee_count ? String(d.employee_count || ov.employee_count || ov.employees || liIns.employee_count) : null,
+              employeeCount: d.employee_count || liIns.employee_count || ov.employee_count || ov.employees ? String(d.employee_count || liIns.employee_count || ov.employee_count || ov.employees) : null,
+              headquarters: ov.headquarters || ov.address || liIns.headquarters || null,
+              website: derivedWebsite,
+              linkedinUrl: derivedLinkedin,
+              linkedinFollowers: d.linkedin_followers || liIns.linkedin_followers || ov.linkedin_followers || null,
+              linkedinMembers: d.linkedin_members || liIns.linkedin_members || ov.linkedin_members || null,
+              companySize: d.company_size || liIns.company_size || ov.company_size || null,
+              hiringStatus: d.hiring_status || liIns.hiring_status || ov.hiring_status || null,
+              companyType: d.company_type || ov.company_type || liIns.company_type || (resData.ticker ? 'Public Company' : 'Privately Held'),
+              companyLogo: d.company_logo || ov.company_logo || ov.logo_url || liIns.company_logo || null,
+              netIncome: fin.net_income ? (typeof fin.net_income === 'number' ? `$${(fin.net_income / 1e9).toFixed(1)}B` : String(fin.net_income)) : (d.net_income ? String(d.net_income) : null),
+              products: d.products || [],
+              executives: realExecs,
+              filings: Array.isArray(d.filings) ? d.filings : (Array.isArray(d.sec_filings) ? d.sec_filings : [])
+            };
+              setCompanies(prev => ({ ...prev, [normKey]: formattedComp }));
+              setActiveCompanyKey(normKey);
+              setCompanyQuery(formattedComp.name);
+              setTab('company');
+              setSearchLoading(false);
+              return;
+            }
+          } catch (err) {
+            console.warn("API fallback active:", err);
+          }
+
+          const compName = q.charAt(0).toUpperCase() + q.slice(1);
+          const slugName = compName.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const formattedComp = {
+            key: normKey,
+            name: compName,
+            ticker: null,
+            industry: null,
+            marketCap: null,
+            revenue: null,
+            peRatio: null,
+            ceo: null,
+            range: null,
+            description: `${compName} enterprise intelligence profile.`,
+            exchange: null,
+            aiScore: null,
+            employees: null,
+            headquarters: null,
+                  website: null,
+            linkedinUrl: `https://www.linkedin.com/company/${slugName}/`,
+          netIncome: null,
+          products: [],
+          executives: [],
+          filings: []
+        };
+        setCompanies(prev => ({ ...prev, [normKey]: formattedComp }));
+        setActiveCompanyKey(normKey);
+        setCompanyQuery(formattedComp.name);
+        setTab('company');
+        setSearchLoading(false);
+      };
+
+      const openCompanyDossier = (key) => {
+        fetchCompanyDossier(key);
+      };
+
+      const handleCompanySearchSubmit = (e) => {
+        if (e) e.preventDefault();
+        if (companyQuery.trim()) {
+          fetchCompanyDossier(companyQuery.trim());
+        }
+      };
+
+      const handleGlobalSearch = (e) => {
+        if (e.key === 'Enter' && globalSearch.trim()) {
+          fetchCompanyDossier(globalSearch.trim());
+          setGlobalSearch('');
+        }
+      };
+
+      const activeComp = companies[activeCompanyKey] || DEFAULT_COMPANIES['tesla'];
+
+      const menu = [
+        { id: 'dashboard', label: 'Dashboard' },
+        { id: 'company', label: 'Company Search' },
+        { id: 'lead', label: 'Lead Finder' },
+        { id: 'people', label: 'People Lookup' },
+        { id: 'bookmarks', label: 'Bookmarks', badge: bookmarks.length },
+        { id: 'settings', label: 'Settings' },
+      ];
+
+      return (
+        <div className="flex h-screen bg-white text-[#111827] overflow-hidden">
+          <aside className="w-64 bg-white border-r border-[#E5E7EB] h-screen flex flex-col justify-between p-6 shrink-0">
+            <div className="space-y-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 cursor-pointer" onClick={() => setTab('dashboard')}>
+                  <div className="w-9 h-9 rounded-2xl bg-[#0EA5E9] text-white font-bold flex items-center justify-center text-xs tracking-tight shadow-sm">LI</div>
+                  <span className="font-bold text-lg text-[#111827]">Lead Intelligence</span>
+                </div>
+                <button onClick={() => window.open('https://www.zuntra.com/', '_blank', 'noopener,noreferrer')} className="text-xs font-semibold text-[#0EA5E9] hover:underline">Website</button>
+              </div>
+              <nav className="space-y-1">
+                {menu.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => setTab(m.id)}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-semibold transition-all ${
+                      tab === m.id ? 'bg-[#F0F9FF] text-[#0EA5E9] border border-sky-100' : 'text-[#6B7280] hover:bg-[#F8FAFC]'
+                    }`}
+                  >
+                    <span>{m.label}</span>
+                    {m.badge !== undefined && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${tab === m.id ? 'bg-[#0EA5E9] text-white' : 'bg-slate-100 text-[#6B7280]'}`}>
+                        {m.badge}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </nav>
+            </div>
+            <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] text-xs space-y-1">
+              <p className="font-bold text-[#111827]">Backend Status</p>
+              <p className="text-[#16A34A] font-semibold">● Connected (localhost:5000)</p>
+            </div>
+          </aside>
+
+          <div className="flex-1 flex flex-col h-screen overflow-hidden">
+            <header className="bg-white border-b border-[#E5E7EB] px-8 py-4 flex items-center justify-between">
+              <div className="w-full max-w-md">
+                <input
+                  type="text"
+                  placeholder="Search companies, leads, executives... (Press Enter)"
+                  value={globalSearch}
+                  onChange={(e) => setGlobalSearch(e.target.value)}
+                  onKeyDown={handleGlobalSearch}
+                  className="w-full bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl py-2.5 px-4 text-sm text-[#111827] placeholder-[#6B7280] focus:outline-none focus:border-[#0EA5E9] focus:ring-2 focus:ring-[#0EA5E9]/20 transition-all"
+                />
+              </div>
+              <div className="flex items-center gap-4">
+                <Badge variant="success">API Online</Badge>
+                <div className="w-9 h-9 rounded-2xl bg-slate-900 text-white font-bold flex items-center justify-center text-sm">JS</div>
+              </div>
+            </header>
+
+            <main className="flex-1 overflow-y-auto p-8 bg-white">
+              {tab === 'dashboard' && (
+                <div className="space-y-8 max-w-6xl mx-auto">
+                  <div className="flex items-center justify-between bg-[#F8FAFC] border border-[#E5E7EB] p-6 rounded-3xl">
+                    <div>
+                      <h1 className="text-2xl font-extrabold text-[#111827]">Sales Intelligence Dashboard</h1>
+                      <p className="text-sm text-[#6B7280] mt-1">Real-time company research & lead discovery.</p>
+                    </div>
+                    <Button variant="primary" onClick={() => setTab('company')}>Company Search</Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <Card><p className="text-xs text-[#6B7280] font-semibold uppercase">Companies Tracked</p><h3 className="text-2xl font-bold mt-1">{Object.keys(companies).length}</h3></Card>
+                    <Card><p className="text-xs text-[#6B7280] font-semibold uppercase">People Found</p><h3 className="text-2xl font-bold mt-1">1,420</h3></Card>
+                    <Card><p className="text-xs text-[#6B7280] font-semibold uppercase">Bookmarks</p><h3 className="text-2xl font-bold mt-1">{bookmarks.length}</h3></Card>
+                    <Card><p className="text-xs text-[#6B7280] font-semibold uppercase">AI Searches</p><h3 className="text-2xl font-bold mt-1">384</h3></Card>
+                  </div>
+
+                  <Card className="p-0 overflow-hidden">
+                    <div className="p-4 border-b border-[#E5E7EB] font-bold text-[#111827] flex items-center justify-between">
+                      <span>Recently Analyzed Companies</span>
+                      <span className="text-xs text-[#6B7280] font-normal">Click any row to open dossier</span>
+                    </div>
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-[#F8FAFC] text-xs uppercase text-[#6B7280]">
+                        <tr>
+                          <th className="p-4">Company</th>
+                          <th className="p-4">Industry</th>
+                          <th className="p-4">Valuation</th>
+                          <th className="p-4">AI Score</th>
+                          <th className="p-4 text-right">Bookmark</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E5E7EB]">
+                        {Object.values(companies).map((c) => {
+                          const isBm = bookmarks.includes(c.key);
+                          return (
+                            <tr key={c.key} className="hover:bg-slate-50 cursor-pointer transition-colors" onClick={() => openCompanyDossier(c.key)}>
+                              <td className="p-4 font-bold text-[#111827]">{c.name} <span className="text-xs font-normal text-[#6B7280]">({c.ticker})</span></td>
+                              <td className="p-4 text-[#6B7280]">{c.industry}</td>
+                              <td className="p-4 font-medium">{c.marketCap}</td>
+                              <td className="p-4"><Badge variant="success">{c.aiScore}</Badge></td>
+                              <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  onClick={() => toggleBookmark(c.key)}
+                                  className={`px-3 py-1 rounded-xl text-xs font-semibold border transition-all ${
+                                    isBm ? 'bg-[#F0F9FF] text-[#0EA5E9] border-sky-200 hover:bg-sky-100' : 'bg-white text-[#6B7280] border-[#E5E7EB] hover:bg-slate-100'
+                                  }`}
+                                >
+                                  {isBm ? '★ Bookmarked' : '☆ Bookmark'}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </Card>
+                </div>
+              )}
+
+              {tab === 'company' && (
+                <div className="space-y-8 max-w-5xl mx-auto">
+                  <div className="text-center space-y-4 max-w-xl mx-auto">
+                    <h1 className="text-3xl font-extrabold text-[#111827]">Company Intelligence Search</h1>
+                    <form onSubmit={handleCompanySearchSubmit} className="flex gap-3">
+                      <Input
+                        placeholder="Search company (e.g. Tesla, Apple, Nvidia, Inlogic)..."
+                        value={companyQuery}
+                        onChange={(e) => setCompanyQuery(e.target.value)}
+                      />
+                      <Button variant="primary" loading={searchLoading}>Generate Dossier</Button>
+                    </form>
+                  </div>
+
+                  {/* FULL COMPANY DOSSIER */}
+                  <div className="space-y-6">
+                    {/* Header Card */}
+                    <Card className="space-y-6">
+                      {/* 1. Company Header */}
+                      <div className="flex items-start justify-between border-b border-[#E5E7EB] pb-5">
+                        <div className="flex items-center gap-4">
+                          {activeComp.companyLogo ? (
+                            <img src={activeComp.companyLogo} alt={activeComp.name} className="w-14 h-14 rounded-2xl object-cover border border-[#E5E7EB] shadow-sm shrink-0" />
+                          ) : (
+                            <div className="w-14 h-14 rounded-2xl bg-[#0EA5E9] text-white font-bold flex items-center justify-center text-2xl shadow-sm shrink-0">
+                              {(activeComp.name || 'C')[0]}
+                            </div>
+                          )}
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <h2 className="text-2xl font-extrabold text-[#111827]">{activeComp.name}</h2>
+                              {activeComp.ticker && <Badge variant="primary">{activeComp.exchange || 'NASDAQ'}: {activeComp.ticker}</Badge>}
+                              {activeComp.companyType && <Badge variant="secondary">{activeComp.companyType}</Badge>}
+                              {activeComp.aiScore && <Badge variant="success">AI Score: {activeComp.aiScore}</Badge>}
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap text-xs text-[#6B7280] font-medium pt-1">
+                              {activeComp.industry && <span className="px-2.5 py-1 bg-slate-100 rounded-lg text-[#374151] font-semibold">{activeComp.industry}</span>}
+                              {activeComp.foundedYear && <span className="px-2.5 py-1 bg-slate-100 rounded-lg text-[#374151] font-semibold">Founded {activeComp.foundedYear}</span>}
+                              {activeComp.companyType && <span className="px-2.5 py-1 bg-slate-100 rounded-lg text-[#374151] font-semibold">{activeComp.companyType}</span>}
+                              {activeComp.headquarters && <span className="px-2.5 py-1 bg-slate-100 rounded-lg text-[#374151] font-semibold">📍 {activeComp.headquarters}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {ensureUrl(activeComp.website) && (
+                            <a
+                              href={ensureUrl(activeComp.website)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-3.5 py-2 rounded-2xl text-xs font-semibold border border-[#E5E7EB] text-[#111827] hover:bg-slate-50 transition-all flex items-center gap-1.5 shadow-sm"
+                            >
+                              <span>🌐</span> Website
+                            </a>
+                          )}
+                          {ensureUrl(activeComp.linkedinUrl) && (
+                            <a
+                              href={ensureUrl(activeComp.linkedinUrl)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-3.5 py-2 rounded-2xl text-xs font-semibold border border-[#0EA5E9] text-[#0EA5E9] bg-sky-50 hover:bg-sky-100 transition-all flex items-center gap-1.5 shadow-sm"
+                            >
+                              <span>💼</span> LinkedIn Company
+                            </a>
+                          )}
+                          <button
+                            onClick={() => toggleBookmark(activeComp.key)}
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold border transition-all shadow-sm ${
+                              bookmarks.includes(activeComp.key)
+                                ? 'bg-[#0EA5E9] text-white border-[#0EA5E9] hover:bg-[#0284C7]'
+                                : 'bg-white text-[#111827] border-[#E5E7EB] hover:bg-slate-50'
+                            }`}
+                          >
+                            <span>{bookmarks.includes(activeComp.key) ? '★' : '☆'}</span>
+                            <span>{bookmarks.includes(activeComp.key) ? 'Bookmarked (Unmark)' : 'Bookmark'}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 2. LinkedIn Company Insights */}
+                      {(activeComp.linkedinFollowers || activeComp.linkedinMembers || activeComp.employeeCount || activeComp.companySize || activeComp.hiringStatus) && (
+                        <div>
+                          <h4 className="text-xs font-bold text-[#0EA5E9] uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <span>💼</span> LinkedIn Company Insights
+                          </h4>
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 bg-[#F0F9FF] p-4 rounded-2xl border border-sky-100">
+                            {activeComp.linkedinFollowers && (
+                              <div className="p-3.5 bg-white border border-sky-100 rounded-2xl text-center shadow-sm">
+                                <p className="text-xs text-[#6B7280] font-medium">LinkedIn Followers</p>
+                                <p className="font-bold text-base text-[#0EA5E9] mt-1">{activeComp.linkedinFollowers}</p>
+                              </div>
+                            )}
+                            {activeComp.linkedinMembers && (
+                              <div className="p-3.5 bg-white border border-sky-100 rounded-2xl text-center shadow-sm">
+                                <p className="text-xs text-[#6B7280] font-medium">LinkedIn Members</p>
+                                <p className="font-bold text-base text-[#111827] mt-1">{activeComp.linkedinMembers}</p>
+                              </div>
+                            )}
+                            {activeComp.employeeCount && (
+                              <div className="p-3.5 bg-white border border-sky-100 rounded-2xl text-center shadow-sm">
+                                <p className="text-xs text-[#6B7280] font-medium">Employee Count</p>
+                                <p className="font-bold text-base text-[#111827] mt-1">{activeComp.employeeCount}</p>
+                              </div>
+                            )}
+                            {activeComp.companySize && (
+                              <div className="p-3.5 bg-white border border-sky-100 rounded-2xl text-center shadow-sm">
+                                <p className="text-xs text-[#6B7280] font-medium">Company Size</p>
+                                <p className="font-bold text-base text-[#111827] mt-1">{activeComp.companySize}</p>
+                              </div>
+                            )}
+                            {activeComp.hiringStatus && (
+                              <div className="p-3.5 bg-white border border-sky-100 rounded-2xl text-center shadow-sm">
+                                <p className="text-xs text-[#6B7280] font-medium">Hiring Status</p>
+                                <p className="font-bold text-base text-[#16A34A] mt-1">{activeComp.hiringStatus}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 3. Business Metrics */}
+                      {(activeComp.marketCap || activeComp.revenue || activeComp.netIncome || activeComp.employees || activeComp.headquarters || activeComp.website) && (
+                        <div>
+                          <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <span>📊</span> Business Metrics
+                          </h4>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            {activeComp.marketCap && (
+                              <div className="p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl text-center">
+                                <p className="text-xs text-[#6B7280] font-medium">Market Cap</p>
+                                <p className="font-bold text-base text-[#111827] mt-1">{activeComp.marketCap}</p>
+                              </div>
+                            )}
+                            {activeComp.revenue && (
+                              <div className="p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl text-center">
+                                <p className="text-xs text-[#6B7280] font-medium">Revenue</p>
+                                <p className="font-bold text-base text-[#111827] mt-1">{activeComp.revenue}</p>
+                              </div>
+                            )}
+                            {activeComp.netIncome && (
+                              <div className="p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl text-center">
+                                <p className="text-xs text-[#6B7280] font-medium">Net Income</p>
+                                <p className="font-bold text-base text-[#111827] mt-1">{activeComp.netIncome}</p>
+                              </div>
+                            )}
+                            {activeComp.employees && (
+                              <div className="p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl text-center">
+                                <p className="text-xs text-[#6B7280] font-medium">Employees</p>
+                                <p className="font-bold text-base text-[#111827] mt-1">{activeComp.employees}</p>
+                              </div>
+                            )}
+                            {activeComp.headquarters && (
+                              <div className="p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl text-center">
+                                <p className="text-xs text-[#6B7280] font-medium">Headquarters</p>
+                                <p className="font-bold text-base text-[#111827] mt-1 truncate">{activeComp.headquarters}</p>
+                              </div>
+                            )}
+                            {activeComp.website && (
+                              <div className="p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl text-center">
+                                <p className="text-xs text-[#6B7280] font-medium">Website</p>
+                                <a href={activeComp.website} target="_blank" rel="noreferrer" className="font-bold text-base text-[#0EA5E9] hover:underline mt-1 truncate block">
+                                  {activeComp.website.replace(/^https?:\/\//, '')}
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 4. About Company */}
+                      {activeComp.description && (
+                        <div>
+                          <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-wider mb-2 flex items-center gap-2">
+                            <span>🏢</span> About Company
+                          </h4>
+                          <p className="text-sm text-[#111827] leading-relaxed bg-[#F8FAFC] p-5 rounded-2xl border border-[#E5E7EB] whitespace-pre-line">
+                            {activeComp.description}
+                          </p>
+                        </div>
+                      )}
+
+                      {activeComp.products && activeComp.products.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-wider mb-2">What They Do & Core Offerings</h4>
+                          <ul className="space-y-2 bg-[#F8FAFC] p-4 rounded-2xl border border-[#E5E7EB] text-sm text-[#111827]">
+                            {activeComp.products.map((prod, idx) => (
+                              <li key={idx} className="flex items-center gap-2 font-medium">
+                                <span className="text-[#0EA5E9] font-bold">✓</span>
+                                <span>{prod}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* 5. Executive Cards */}
+                      <div>
+                        <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-wider mb-3 flex items-center gap-2">
+                          <span>👥</span> Key Decision Makers & Executives
+                        </h4>
+                        {activeComp.executives && activeComp.executives.length > 0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {activeComp.executives.map((exec, idx) => (
+                              <div key={idx} className="p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl space-y-3 hover:border-sky-200 transition-all">
+                                <div className="flex items-center gap-3">
+                                  {exec.avatar ? (
+                                    <img src={exec.avatar} alt={exec.name} className="w-11 h-11 rounded-2xl object-cover border border-[#E5E7EB] shadow-sm shrink-0" />
+                                  ) : (
+                                    <div className="w-11 h-11 rounded-2xl bg-[#0EA5E9] text-white font-bold flex items-center justify-center text-sm shadow-sm shrink-0">
+                                      {(exec.name || 'E').split(' ').map(n => n[0]).join('').slice(0, 2)}
+                                    </div>
+                                  )}
+                                  <div className="overflow-hidden">
+                                    <h5 className="font-bold text-sm text-[#111827] truncate">{exec.name}</h5>
+                                    <p className="text-xs text-[#6B7280] truncate font-medium">{exec.title || exec.role || 'Executive'}</p>
+                                  </div>
+                                </div>
+                                {(() => {
+                                  const validEmail = cleanEmail(exec.email || exec.work_email);
+                                  const validPhone = formatPhone(exec.phone || exec.work_phone || exec.phone_number);
+                                  const validLi = cleanLinkedIn(exec.linkedin || exec.linkedin_url || exec.url || exec.linkedin_profile);
+
+                                  if (!validEmail && !validPhone && !validLi) return null;
+
+                                  return (
+                                    <div className="space-y-2.5 pt-3 border-t border-[#E5E7EB] text-xs">
+                                      {validEmail && (
+                                        <div className="space-y-0.5">
+                                          <span className="text-[#6B7280] font-medium block">Email</span>
+                                          <a href={`mailto:${validEmail}`} className="font-semibold text-[#0EA5E9] hover:underline truncate block">
+                                            {validEmail}
+                                          </a>
+                                        </div>
+                                      )}
+                                      {validPhone && (
+                                        <div className="space-y-0.5">
+                                          <span className="text-[#6B7280] font-medium block">Phone</span>
+                                          <a href={`tel:${validPhone.replace(/\s+/g, '')}`} className="font-bold text-[#16A34A] hover:underline block">
+                                            {validPhone}
+                                          </a>
+                                        </div>
+                                      )}
+                                      {validLi && (
+                                        <div className="space-y-0.5">
+                                          <span className="text-[#6B7280] font-medium block">LinkedIn</span>
+                                          <a href={validLi.href} target="_blank" rel="noreferrer" className="font-semibold text-[#0EA5E9] hover:underline truncate block">
+                                            {validLi.display}
+                                          </a>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl text-center">
+                            <p className="text-sm text-[#6B7280]">No executive information available.</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Regulatory Filings & Documents */}
+                      <div>
+                        <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-wider mb-3">SEC Filings & Reports</h4>
+                        {activeComp.filings && activeComp.filings.length > 0 ? (
+                          <div className="space-y-2">
+                            {activeComp.filings.map((f, idx) => (
+                              <div key={idx} className="flex items-center justify-between p-3 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl text-xs">
+                                <div className="flex items-center gap-3">
+                                  <span className="font-bold text-[#0EA5E9] bg-sky-50 px-2 py-1 rounded-lg border border-sky-100">{f.form || f.form_type || 'Filing'}</span>
+                                  <span className="font-semibold text-[#111827]">{f.title || f.form || 'Regulatory Filing'}</span>
+                                </div>
+                                <span className="text-[#6B7280]">{f.date || f.filed_at || ''}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl text-center">
+                            <p className="text-sm text-[#6B7280]">This company does not publish SEC filings.</p>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  </div>
+                </div>
+              )}
+
+              {tab === 'lead' && (
+                <div className="space-y-8 max-w-4xl mx-auto">
+                  <div className="text-center space-y-3">
+                    <h1 className="text-3xl font-extrabold text-[#111827]">Lead Intelligence Finder</h1>
+                    <p className="text-sm text-[#6B7280]">
+                      Investigate corporate emails to extract verified decision makers, company dossiers, and executive contacts.
+                    </p>
+                  </div>
+
+                  <Card className="p-6 space-y-4">
+                    <form onSubmit={handleLeadInvestigateSubmit} className="space-y-4">
+                      <Input
+                        label="Corporate Email"
+                        placeholder="e.g. satya.nadella@microsoft.com"
+                        value={leadEmail}
+                        onChange={(e) => setLeadEmail(e.target.value)}
+                      />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                          label="Company Name (Optional)"
+                          placeholder="e.g. Microsoft"
+                          value={leadCompany}
+                          onChange={(e) => setLeadCompany(e.target.value)}
+                        />
+                        <Input
+                          label="Target Domain (Optional)"
+                          placeholder="e.g. microsoft.com"
+                          value={leadDomain}
+                          onChange={(e) => setLeadDomain(e.target.value)}
+                        />
+                      </div>
+                      <Button variant="primary" size="lg" className="w-full" loading={leadLoading}>
+                        Investigate Lead
+                      </Button>
+                    </form>
+
+                    {leadLoading && (
+                      <div className="p-4 bg-[#F0F9FF] border border-sky-100 rounded-2xl text-center space-y-2">
+                        <div className="text-sm font-bold text-[#0EA5E9] animate-pulse">
+                          Analyzing lead domain & querying intelligence sources...
+                        </div>
+                        <p className="text-xs text-[#6B7280]">Extracting corporate entity details, executive contacts, and filings.</p>
+                      </div>
+                    )}
+
+                    {leadError && (
+                      <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-sm font-semibold">
+                        {leadError}
+                      </div>
+                    )}
+                  </Card>
+
+                  {leadResult && (
+                    <div className="space-y-6">
+                      <Card className="p-6 space-y-6">
+                        <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-4">
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <h3 className="text-xl font-extrabold text-[#111827]">
+                                {leadResult.company?.resolved?.name || leadResult.parsed?.company_hint?.toUpperCase() || 'Lead Discovered'}
+                              </h3>
+                              <Badge variant="success">Verified Target</Badge>
+                            </div>
+                            <p className="text-xs text-[#6B7280] mt-1 font-medium">
+                              Email: <span className="font-bold text-[#0EA5E9]">{leadResult.query || leadEmail}</span> • Domain: <span className="font-bold text-[#111827]">{leadResult.parsed?.domain || 'Corporate'}</span>
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Button variant="outline" size="sm" onClick={exportLeadCSV}>
+                              Export CSV
+                            </Button>
+                            {leadResult.company?.resolved?.name && (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => openCompanyDossier(leadResult.company?.resolved?.name || leadResult.parsed?.company_hint)}
+                              >
+                                View Full Company Dossier →
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+
+                        {leadResult.parsed && (
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl space-y-1">
+                              <span className="text-xs text-[#6B7280] font-semibold">Identified Target Name</span>
+                              <p className="font-bold text-[#111827] capitalize">
+                                {leadResult.parsed.name_hint || leadResult.parsed.local || 'Executive Lead'}
+                              </p>
+                            </div>
+                            <div className="p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl space-y-1">
+                              <span className="text-xs text-[#6B7280] font-semibold">Company Entity</span>
+                              <p className="font-bold text-[#111827] capitalize">
+                                {leadResult.company?.resolved?.name || leadResult.parsed.company_hint || 'Corporate Enterprise'}
+                              </p>
+                            </div>
+                            <div className="p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl space-y-1">
+                              <span className="text-xs text-[#6B7280] font-semibold">Email Classification</span>
+                              <p className="font-bold text-[#16A34A]">
+                                {leadResult.parsed.is_free ? 'Personal Email (Free Provider)' : 'Corporate Work Email (Verified B2B)'}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {leadResult.company?.overview?.description && (
+                          <div>
+                            <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-wider mb-2">Company Overview</h4>
+                            <p className="text-sm text-[#111827] leading-relaxed bg-[#F8FAFC] p-4 rounded-2xl border border-[#E5E7EB]">
+                              {leadResult.company.overview.description}
+                            </p>
+                          </div>
+                        )}
+
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Discovered Key Decision Makers & Executives</h4>
+                            <span className="text-xs font-semibold text-[#0EA5E9]">Verified B2B Leads</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="p-4 bg-[#F8FAFC] border border-[#0EA5E9] rounded-2xl space-y-3 shadow-sm">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-[#0EA5E9] text-white font-bold flex items-center justify-center text-sm">
+                                  {(leadResult.parsed?.name_hint || 'Target').charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                  <h5 className="font-bold text-sm text-[#111827] capitalize">
+                                    {leadResult.parsed?.name_hint || leadResult.parsed?.local || 'Target Executive'}
+                                  </h5>
+                                  <p className="text-xs text-[#0EA5E9] font-semibold">Primary Target Lead</p>
+                                </div>
+                              </div>
+                              <div className="space-y-1.5 pt-2 border-t border-[#E5E7EB] text-xs">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[#6B7280]">Email:</span>
+                                  <span className="font-semibold text-[#0EA5E9]">{leadResult.query || leadEmail}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[#6B7280]">Domain:</span>
+                                  <span className="font-semibold text-[#111827]">{leadResult.parsed?.domain || 'Corporate'}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {(leadResult.company?.overview?.executives || leadResult.company?.executives || []).map((exec, idx) => (
+                              <div key={idx} className="p-4 bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl space-y-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-2xl bg-[#0EA5E9] text-white font-bold flex items-center justify-center text-sm">
+                                    {exec.name ? exec.name.charAt(0) : 'E'}
+                                  </div>
+                                  <div className="overflow-hidden">
+                                    <h5 className="font-bold text-sm text-[#111827] truncate">{exec.name}</h5>
+                                    <p className="text-xs text-[#6B7280] truncate font-medium">{exec.title || exec.role || 'Executive'}</p>
+                                  </div>
+                                </div>
+                                {(() => {
+                                  const validEmail = cleanEmail(exec.email || exec.work_email);
+                                  const validPhone = formatPhone(exec.phone || exec.work_phone || exec.phone_number);
+                                  const validLi = cleanLinkedIn(exec.linkedin || exec.linkedin_url || exec.url || exec.linkedin_profile);
+
+                                  if (!validEmail && !validPhone && !validLi) return null;
+
+                                  return (
+                                    <div className="space-y-2.5 pt-3 border-t border-[#E5E7EB] text-xs">
+                                      {validEmail && (
+                                        <div className="space-y-0.5">
+                                          <span className="text-[#6B7280] font-medium block">Email</span>
+                                          <a href={`mailto:${validEmail}`} className="font-semibold text-[#0EA5E9] hover:underline truncate block">
+                                            {validEmail}
+                                          </a>
+                                        </div>
+                                      )}
+                                      {validPhone && (
+                                        <div className="space-y-0.5">
+                                          <span className="text-[#6B7280] font-medium block">Phone</span>
+                                          <a href={`tel:${validPhone.replace(/\s+/g, '')}`} className="font-bold text-[#16A34A] hover:underline block">
+                                            {validPhone}
+                                          </a>
+                                        </div>
+                                      )}
+                                      {validLi && (
+                                        <div className="space-y-0.5">
+                                          <span className="text-[#6B7280] font-medium block">LinkedIn</span>
+                                          <a href={validLi.href} target="_blank" rel="noreferrer" className="font-semibold text-[#0EA5E9] hover:underline truncate block">
+                                            {validLi.display}
+                                          </a>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </Card>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {tab === 'people' && (
+                <div className="space-y-8 max-w-5xl mx-auto">
+                  <div className="text-center space-y-3 max-w-xl mx-auto">
+                    <h1 className="text-3xl font-extrabold text-[#111827]">People & Executive Lookup</h1>
+                    <form onSubmit={handlePeopleLookupSubmit} className="flex gap-3">
+                      <Input
+                        placeholder="Search executive by name or title (e.g. Satya Nadella, Elon Musk)..."
+                        value={personName}
+                        onChange={(e) => setPersonName(e.target.value)}
+                      />
+                      <Button variant="primary" loading={peopleLoading}>Lookup Executive</Button>
+                    </form>
+                  </div>
+
+                  {peopleLoading && (
+                    <div className="p-4 bg-[#F0F9FF] border border-sky-100 rounded-2xl text-center text-sm font-bold text-[#0EA5E9] animate-pulse">
+                      Searching executive profiles...
+                    </div>
+                  )}
+
+                  {peopleError && (
+                    <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-sm font-semibold text-center">
+                      {peopleError}
+                    </div>
+                  )}
+
+                  {peopleResults && peopleResults.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {peopleResults.map((p, i) => (
+                        <Card key={i} hoverable className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-[#0EA5E9] text-white font-bold flex items-center justify-center text-sm">
+                              {p.name ? p.name.charAt(0) : 'P'}
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-[#111827] text-base">{p.name || 'Executive Profile'}</h3>
+                              <p className="text-xs text-[#6B7280]">{p.headline || p.role || 'Corporate Executive'}</p>
+                            </div>
+                          </div>
+                          {p.url && (
+                            <a
+                              href={p.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB] text-xs font-semibold text-[#0EA5E9] hover:bg-sky-50 transition-all"
+                            >
+                              View LinkedIn Profile →
+                            </a>
+                          )}
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Featured Decision Makers</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <Card hoverable className="cursor-pointer space-y-2" onClick={() => openCompanyDossier('tesla')}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-[#0EA5E9] text-white font-bold flex items-center justify-center">EM</div>
+                          <div>
+                            <h3 className="font-bold text-[#111827]">Elon Musk</h3>
+                            <p className="text-xs text-[#6B7280]">CEO & Founder @ Tesla</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-[#0EA5E9] font-bold">Open Company Dossier →</p>
+                      </Card>
+                      <Card hoverable className="cursor-pointer space-y-2" onClick={() => openCompanyDossier('microsoft')}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-[#0EA5E9] text-white font-bold flex items-center justify-center">SN</div>
+                          <div>
+                            <h3 className="font-bold text-[#111827]">Satya Nadella</h3>
+                            <p className="text-xs text-[#6B7280]">Chairman & CEO @ Microsoft</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-[#0EA5E9] font-bold">Open Company Dossier →</p>
+                      </Card>
+                      <Card hoverable className="cursor-pointer space-y-2" onClick={() => openCompanyDossier('nvidia')}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-[#0EA5E9] text-white font-bold flex items-center justify-center">JH</div>
+                          <div>
+                            <h3 className="font-bold text-[#111827]">Jensen Huang</h3>
+                            <p className="text-xs text-[#6B7280]">Founder & CEO @ Nvidia</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-[#0EA5E9] font-bold">Open Company Dossier →</p>
+                      </Card>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {tab === 'bookmarks' && (
+                <div className="space-y-8 max-w-5xl mx-auto">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h1 className="text-2xl font-extrabold text-[#111827]">Bookmarked Portfolio</h1>
+                      <p className="text-sm text-[#6B7280] mt-1">Manage saved company profiles. Click any card to view dossier or unmark.</p>
+                    </div>
+                    <Badge variant="primary">{bookmarks.length} Bookmarked</Badge>
+                  </div>
+
+                  {bookmarks.length === 0 ? (
+                    <Card className="text-center py-16 space-y-4">
+                      <div className="w-12 h-12 rounded-full bg-[#F0F9FF] text-[#0EA5E9] flex items-center justify-center text-xl font-bold mx-auto">☆</div>
+                      <h3 className="text-lg font-bold text-[#111827]">No Bookmarked Companies</h3>
+                      <p className="text-sm text-[#6B7280] max-w-sm mx-auto">You have not bookmarked any company profiles yet. Search for companies and click the bookmark button to save them here.</p>
+                      <Button variant="primary" onClick={() => setTab('company')}>Explore Companies</Button>
+                    </Card>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {bookmarks.map((bmKey) => {
+                        const comp = companies[bmKey] || {
+                          key: bmKey,
+                          name: bmKey.toUpperCase(),
+                          ticker: bmKey.slice(0, 4).toUpperCase(),
+                          industry: 'Saved Entity',
+                          marketCap: 'N/A',
+                          ceo: 'N/A'
+                        };
+                        return (
+                          <Card
+                            key={bmKey}
+                            hoverable
+                            className="space-y-4 border-l-4 border-l-[#0EA5E9] cursor-pointer group"
+                            onClick={() => openCompanyDossier(bmKey)}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h3 className="font-bold text-[#111827] group-hover:text-[#0EA5E9] transition-colors">{comp.name}</h3>
+                                <p className="text-xs text-[#6B7280] mt-0.5">{comp.industry} • ({comp.ticker})</p>
+                              </div>
+                              <button
+                                title="Unmark / Remove Bookmark"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleBookmark(bmKey);
+                                }}
+                                className="p-1.5 rounded-xl bg-sky-50 text-[#0EA5E9] hover:bg-red-50 hover:text-red-600 transition-colors"
+                              >
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                </svg>
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-xs bg-[#F8FAFC] p-3 rounded-xl border border-[#E5E7EB]">
+                              <div>
+                                <span className="text-[#6B7280] block">Market Cap</span>
+                                <span className="font-bold text-[#111827]">{comp.marketCap}</span>
+                              </div>
+                              <div>
+                                <span className="text-[#6B7280] block">CEO</span>
+                                <span className="font-bold text-[#111827]">{comp.ceo}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between text-xs pt-1">
+                              <span className="text-[#0EA5E9] font-bold group-hover:underline flex items-center gap-1">
+                                Open Dossier →
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleBookmark(bmKey);
+                                }}
+                                className="text-xs font-semibold text-red-500 hover:underline"
+                              >
+                                Unmark
+                              </button>
+                            </div>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {tab === 'settings' && (
+                <div className="space-y-8 max-w-4xl mx-auto">
+                  <h1 className="text-2xl font-extrabold text-[#111827]">System Settings & Status</h1>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card><h3 className="font-bold">Flask Server</h3><p className="text-xs text-[#16A34A] font-semibold mt-1">● Operational (localhost:5000)</p></Card>
+                    <Card><h3 className="font-bold">Supabase Store</h3><p className="text-xs text-[#6B7280] font-semibold mt-1">Local JSON Fallback Active</p></Card>
+                    <Card><h3 className="font-bold">Playwright Engine</h3><p className="text-xs text-[#16A34A] font-semibold mt-1">● Chromium Active</p></Card>
+                    <Card><h3 className="font-bold">Groq AI Engine</h3><p className="text-xs text-[#16A34A] font-semibold mt-1">● Model llama-3.3-70b Active</p></Card>
+                  </div>
+                </div>
+              )}
+
+              {/* Workspace Bottom Footer */}
+              <footer className="mt-16 pt-6 border-t border-[#E5E7EB] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#6B7280]">
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-lg bg-[#0EA5E9] text-white font-bold flex items-center justify-center text-[10px]">LI</div>
+                  <span className="font-semibold text-[#111827]">Zuntra Lead Intelligence</span>
+                  <span className="text-[#D1D5DB]">•</span>
+                  <span>Local Engine Connected to Supabase</span>
+                </div>
+                <div className="flex items-center gap-5 font-medium">
+                  <button onClick={() => setTab('dashboard')} className="hover:text-[#0EA5E9] transition-colors">Dashboard</button>
+                  <button onClick={() => setTab('settings')} className="hover:text-[#0EA5E9] transition-colors">System Diagnostics</button>
+                  <a href="/api/health" target="_blank" rel="noopener noreferrer" className="hover:text-[#0EA5E9] transition-colors">API Health</a>
+                  <button onClick={onReturnHome} className="hover:text-[#0EA5E9] transition-colors">← Return to Landing</button>
+                </div>
+              </footer>
+            </main>
+          </div>
+        </div>
+      );
+    }
+
+    function Root() {
+      const [view, setView] = useState('landing');
+      if (view === 'landing') {
+        return (
+          <div className="min-h-screen flex flex-col justify-between">
+            <div>
+              <LandingNavbar onLaunch={() => setView('app')} />
+              <LandingHero onLaunch={() => setView('app')} />
+              <Features />
+              <WhoUsesZuntra />
+              <HowItWorks />
+              <WhyZuntra />
+              <LandingCTA onLaunch={() => setView('app')} />
+            </div>
+            <LandingFooter onLaunch={() => setView('app')} />
+          </div>
+        );
+      }
+      return <AppWorkspace onReturnHome={() => setView('landing')} />;
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+  </script>
+</body>
+</html>

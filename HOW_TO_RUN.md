@@ -52,6 +52,7 @@ GROQ_API_KEY=
 GROQ_MODEL=
 NEWS_GROQ_MODEL=
 GITHUB_TOKEN=
+TRACXN_ACCESS_TOKEN=
 LINKEDIN_EMAIL=
 LINKEDIN_PASSWORD=
 SUPABASE_URL=
@@ -69,6 +70,7 @@ SUPABASE_SERVICE_ROLE_KEY=
 | `GROQ_MODEL` | Optional | Overview/highlights model |
 | `NEWS_GROQ_MODEL` | Optional | Faster model for news relevance |
 | `GITHUB_TOKEN` | Optional | GitHub org/repos (skipped if empty) |
+| `TRACXN_ACCESS_TOKEN` | Optional | Funding/investors (skipped if empty) |
 | `LINKEDIN_EMAIL` | Yes for People Lookup | Playwright login for search + scrape |
 | `LINKEDIN_PASSWORD` | Yes for People Lookup | Playwright login for search + scrape |
 | `SUPABASE_URL` | Recommended | Dossiers, people, bookmarks, workspace |
@@ -84,7 +86,7 @@ Optional knobs:
 ### Supabase (recommended)
 
 1. Create a Supabase project.
-2. Open the SQL editor and run [`supabase/schema.sql`](supabase/schema.sql) once.
+2. Open the SQL editor and run [`integration/supabase/schema.sql`](integration/supabase/schema.sql) once.
 3. Add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to `not to share\.env`.
 
 Tables created: `companies`, `source_cache`, `news_days`, `workspace`, `bookmarks`, `people`.
@@ -100,7 +102,7 @@ Without Playwright Chromium, company/news search still runs, but article bodies 
 Keep the venv activated, then:
 
 ```powershell
-python ui\app.py
+python backend\ui\app.py
 ```
 
 Open:
@@ -135,9 +137,9 @@ Ctrl+C in the terminal stops the Flask server.
 
 The extension is a side-panel UI that talks to the same Flask server. It does not include the Dashboard tab.
 
-1. Start Flask first (`python ui\app.py`).
+1. Start Flask first (`python backend\ui\app.py`).
 2. Open Chrome → **Extensions** → **Manage extensions** → enable **Developer mode**.
-3. **Load unpacked** → select the `extension\` folder.
+3. **Load unpacked** → select the `integration\extension\` folder.
 4. Click the extension icon to open the side panel.
 
 The extension calls `http://127.0.0.1:5000` for all API requests. Flask must be running locally.
@@ -153,10 +155,10 @@ Use these when you do not want the UI. Always activate the venv first.
 ### A. Company scraper (full JSON)
 
 ```powershell
-cd "web scraper"
+cd "backend\web_scraper"
 python -m src "Apple"
 python view_lastrun.py
-cd ..
+cd ..\..
 ```
 
 Replace `"Apple"` with any company name.
@@ -164,15 +166,15 @@ Replace `"Apple"` with any company name.
 Flags:
 
 ```powershell
-cd "web scraper"
+cd "backend\web_scraper"
 python -m src "Apple" --summary
 python -m src "Apple" --no-groq
 python -m src "Apple" --no-playwright
 python -m src "Apple" --no-groq --no-playwright
 python -m src --help
 python view_lastrun.py --help
-python view_lastrun.py --path "..\not to share\web scraper\lastrun.json"
-cd ..
+python view_lastrun.py --path "..\..\not to share\web scraper\lastrun.json"
+cd ..\..
 ```
 
 `--no-playwright` = titles/summaries only (no article body scrape).
@@ -180,14 +182,14 @@ cd ..
 ### B. Lead finder
 
 ```powershell
-cd "lead finder"
+cd "backend\lead_finder"
 python main.py --list-samples
 python main.py "satya.nadella@microsoft.com"
-python main.py --cookie "..\not to share\lead finder\cookies\satya-nadella-microsoft.json"
+python main.py --cookie "..\..\not to share\lead finder\cookies\satya-nadella-microsoft.json"
 python main.py "satya.nadella@microsoft.com" --no-scrape
 python main.py "satya.nadella@microsoft.com" --no-search
 python main.py "satya.nadella@microsoft.com" --headed
-cd ..
+cd ..\..
 ```
 
 CLI lead finder runs the **live** pipeline (includes company news + LinkedIn search + scrape). The UI Lead tab uses a faster investigate path (`--no-scrape --no-search`) and skips news until **Look up news** is pressed.
@@ -195,10 +197,10 @@ CLI lead finder runs the **live** pipeline (includes company news + LinkedIn sea
 ### C. LinkedIn profile scraper
 
 ```powershell
-cd "lead scraper"
+cd "backend\lead_scraper"
 python main.py
 python main.py --view
-cd ..
+cd ..\..
 ```
 
 Put profile URLs in `not to share\linkedin\urls.txt` (one per line). A Chromium window opens by default; complete any checkpoint/2FA there. Session is saved to `not to share\linkedin\storage\linkedin_state.json`.
@@ -405,3 +407,48 @@ python -m playwright install chromium
 
 Remove-Item -Recurse -Force ".\not to share\web scraper\output\.cache", ".\not to share\web scraper\output\news", ".\not to share\web scraper\output\company" -ErrorAction SilentlyContinue
 ```
+
+---
+
+## 11. Production Deployment Guide
+
+### Option A: WSGI Production Server (Waitress / Gunicorn)
+
+For production, run via the multi-threaded WSGI launcher:
+
+**PowerShell (Windows):**
+```powershell
+& ".\not to share\.venv\Scripts\python.exe" run_production.py
+```
+Or:
+```powershell
+.\run_production.ps1
+```
+
+**Bash (Linux / macOS):**
+```bash
+./run_production.sh
+```
+
+### Option B: Docker Container Deployment
+
+Run as a multi-stage container with Playwright dependencies pre-configured:
+
+```bash
+# Build and run with Docker Compose
+docker compose up -d
+
+# View container logs
+docker compose logs -f
+
+# Check container status & health
+docker compose ps
+```
+
+### Production Monitoring & Health Endpoint
+
+The server includes a health check endpoint for load balancers and container monitoring:
+
+- `GET http://127.0.0.1:5000/api/health`
+- Response: `{"status": "healthy", "service": "zuntra-lead-intelligence", "timestamp": "...", "supabase_connected": true/false}`
+

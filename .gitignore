@@ -1,27 +1,14 @@
-# Virtual Environment
+not to share/
+__pycache__/
+*.pyc
+.env
+**/.env
 .venv/
 venv/
-ENV/
-env/
-
-# Python cache
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-
-# Environment variables & secrets
-.env
-not to share/
-.streamlit/secrets.toml
-
-# Build / Output artifacts
-output/
-.cache/
-*.log
-*.sqlite
-*.db
-
-# OS files
-.DS_Store
-Thumbs.db
+web scraper/output/
+web scraper/lastrun.json
+web scraper/assets/
+lead scraper/storage/
+lead scraper/output/
+lead scraper/urls.txt
+debug-*.log

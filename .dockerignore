@@ -1,0 +1,14 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+not to share/.venv
+not to share/linkedin/storage
+not to share/web scraper/output/.cache
+node_modules
+.env.local
+.vscode
+.idea
