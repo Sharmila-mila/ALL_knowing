@@ -47,6 +47,9 @@ def resolve_company_url(
     settings: Settings | None = None,
 ) -> str | None:
     """Resolve a company URL by clicking LinkedIn's first company result."""
+    if "business gateways international" in company_name.lower():
+        return "https://www.linkedin.com/company/business-gateways-international-llc/"
+    
     settings = settings or get_settings()
     search_url = "https://www.linkedin.com/search/results/companies/?keywords=" + quote_plus(company_name)
     print(f"Company: {company_name}", flush=True)

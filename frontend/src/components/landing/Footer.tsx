@@ -9,6 +9,14 @@ export const Footer: React.FC<FooterProps> = ({ onLaunchDashboard }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const scrollTo = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <footer className="bg-white border-t border-[#E5E7EB] text-[#111827]">
       {/* Main Footer Links */}
@@ -39,94 +47,59 @@ export const Footer: React.FC<FooterProps> = ({ onLaunchDashboard }) => {
             </div>
           </div>
 
-          {/* Product Col */}
+
+          {/* Features Col */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#111827]">Platform</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#111827]">Features</h4>
             <ul className="space-y-2 text-sm text-[#6B7280]">
               <li>
-                <button onClick={onLaunchDashboard} className="hover:text-[#0EA5E9] transition-colors text-left">
-                  Company Intelligence
-                </button>
+                <a href="#features" onClick={(e) => scrollTo(e, 'features')} className="hover:text-[#0EA5E9] transition-colors cursor-pointer block">Real-time Scraping</a>
               </li>
               <li>
-                <button onClick={onLaunchDashboard} className="hover:text-[#0EA5E9] transition-colors text-left">
-                  Executive Lookup
-                </button>
+                <a href="#features" onClick={(e) => scrollTo(e, 'features')} className="hover:text-[#0EA5E9] transition-colors cursor-pointer block">Data Enrichment</a>
               </li>
               <li>
-                <button onClick={onLaunchDashboard} className="hover:text-[#0EA5E9] transition-colors text-left">
-                  Lead Investigation
-                </button>
+                <a href="#features" onClick={(e) => scrollTo(e, 'features')} className="hover:text-[#0EA5E9] transition-colors cursor-pointer block">Competitor Analysis</a>
               </li>
               <li>
-                <button onClick={onLaunchDashboard} className="hover:text-[#0EA5E9] transition-colors text-left">
-                  Financial Analytics
-                </button>
-              </li>
-              <li>
-                <button onClick={onLaunchDashboard} className="hover:text-[#0EA5E9] transition-colors text-left">
-                  Tracked Companies
-                </button>
+                <a href="#features" onClick={(e) => scrollTo(e, 'features')} className="hover:text-[#0EA5E9] transition-colors cursor-pointer block">Automated Dossiers</a>
               </li>
             </ul>
           </div>
 
-          {/* Data Sources Col */}
+          {/* Engineering Col */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#111827]">Intelligence Stack</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#111827]">Engineering</h4>
             <ul className="space-y-2 text-sm text-[#6B7280]">
-              <li className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0EA5E9]"></span>
-                <span>SEC EDGAR Filings</span>
+              <li>
+                <a href="#engineering" onClick={(e) => scrollTo(e, 'engineering')} className="hover:text-[#0EA5E9] transition-colors cursor-pointer block">System Architecture</a>
               </li>
-              <li className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0EA5E9]"></span>
-                <span>Finnhub & Alpha Vantage</span>
+              <li>
+                <a href="#engineering" onClick={(e) => scrollTo(e, 'engineering')} className="hover:text-[#0EA5E9] transition-colors cursor-pointer block">API Documentation</a>
               </li>
-              <li className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0EA5E9]"></span>
-                <span>Playwright Chromium</span>
+              <li>
+                <a href="#engineering" onClick={(e) => scrollTo(e, 'engineering')} className="hover:text-[#0EA5E9] transition-colors cursor-pointer block">Privacy Architecture</a>
               </li>
-              <li className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0EA5E9]"></span>
-                <span>Groq Llama 3.3 70B</span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0EA5E9]"></span>
-                <span>Supabase PostgreSQL</span>
+              <li>
+                <a href="#engineering" onClick={(e) => scrollTo(e, 'engineering')} className="hover:text-[#0EA5E9] transition-colors cursor-pointer block">Status Page</a>
               </li>
             </ul>
           </div>
 
-          {/* Resources Col */}
+          {/* About Col */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#111827]">Resources</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#111827]">About</h4>
             <ul className="space-y-2 text-sm text-[#6B7280]">
               <li>
-                <a href="/api/health" target="_blank" rel="noopener noreferrer" className="hover:text-[#0EA5E9] transition-colors">
-                  API Health Endpoint
-                </a>
+                <a href="#about" onClick={(e) => scrollTo(e, 'about')} className="hover:text-[#0EA5E9] transition-colors cursor-pointer block">Our Story</a>
               </li>
               <li>
-                <button onClick={onLaunchDashboard} className="hover:text-[#0EA5E9] transition-colors text-left">
-                  Workspace Dashboard
-                </button>
-              </li>
-              <li>
-                <a href="#features" className="hover:text-[#0EA5E9] transition-colors">
-                  Platform Capabilities
-                </a>
-              </li>
-              <li>
-                <button onClick={() => window.open('https://www.zuntra.com/', '_blank', 'noopener,noreferrer')} className="hover:text-[#0EA5E9] transition-colors text-left">
-                  Zuntra Official Portal ↗
-                </button>
-              </li>
-              <li>
-                <span className="text-xs text-[#9CA3AF]">Chrome Extension (MV3)</span>
+                <a href="#blog" onClick={(e) => scrollTo(e, 'blog')} className="hover:text-[#0EA5E9] transition-colors cursor-pointer block">Blog</a>
               </li>
             </ul>
           </div>
+
+
         </div>
 
         {/* Sub-bar / Compliance & Security */}

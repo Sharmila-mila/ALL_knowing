@@ -174,7 +174,14 @@ export const CompanySearchPage: React.FC = () => {
         const ticker = resolved.ticker || overview.ticker;
         const logo = overview.logo_url || overview.thumbnail_url;
         const website = overview.website?.trim() || null;
-        const linkedinUrl = overview.linkedin_url || overview.linkedin || linkedinInsights.url || dossier.linkedin_url;
+        let linkedinUrl = overview.linkedin_url || overview.linkedin || linkedinInsights.url || dossier.linkedin_url;
+        
+        // Manual override for specific company LinkedIn profiles that fail to resolve correctly
+        const lowerName = (name || '').toLowerCase();
+        if (lowerName.includes('business gateways international')) {
+          linkedinUrl = 'https://www.linkedin.com/company/business-gateways-international-llc/';
+        }
+        
         const industry = overview.industry || overview.sector;
         const founded = overview.founded || dossier.registry?.incorporated;
         const companyType = overview.company_type || (ticker ? 'Public' : (overview.share_class ? 'Public' : 'Private'));

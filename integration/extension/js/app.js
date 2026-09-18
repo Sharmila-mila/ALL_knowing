@@ -646,7 +646,8 @@ function openDetail(data) {
 
     const webEl = $('detailWebsite');
     if (overview.website) {
-        webEl.innerHTML = `<a class="link" href="${esc(overview.website)}" target="_blank">Visit</a>`;
+        const url = overview.website.startsWith('http') ? overview.website : 'https://' + overview.website;
+        webEl.innerHTML = `<a class="link" href="${esc(url)}" target="_blank">Visit</a>`;
     } else if (overview.wikipedia_url) {
         webEl.innerHTML = `<a class="link" href="${esc(overview.wikipedia_url)}" target="_blank">Wikipedia</a>`;
     } else {
@@ -810,13 +811,11 @@ function renderCompanyDossier(dossier, titlePrefix, opts) {
             ${row('Sector', val(overview.sector))}
             ${row('Headquarters', val(overview.headquarters))}
             ${row('Country', val(overview.country))}
-            ${overview.website ? row('Website', `<a class="link" href="${esc(overview.website)}" target="_blank">${esc(overview.website)}</a>`) : ''}
+            ${overview.website ? (() => {
+                const url = overview.website.startsWith('http') ? overview.website : 'https://' + overview.website;
+                return row('Website', `<a class="link" href="${esc(url)}" target="_blank">${esc(overview.website)}</a>`);
+            })() : ''}
             ${row('Employees', val(overview.employees))}
-<<<<<<< HEAD
-            ${resolved.exchanges && resolved.exchanges.length ? row('Exchange', esc(resolved.exchanges.join(', '))) : ''}
-        </table>
-    </div>`;
-=======
             ${overview.phone ? row('Phone', esc(overview.phone)) : ''}
             ${overview.address ? row('Address', esc(overview.address)) : ''}
             ${resolved.exchanges && resolved.exchanges.length ? row('Exchange', esc(resolved.exchanges.join(', '))) : ''}
@@ -879,7 +878,6 @@ function renderCompanyDossier(dossier, titlePrefix, opts) {
         });
         html += `</div>`;
     }
->>>>>>> origin/backend
     if (options.leadId) {
         html += `<div class="card">
             <div class="card-actions" style="margin-top:0">
@@ -923,12 +921,8 @@ function renderCompanyDossier(dossier, titlePrefix, opts) {
             </table>
         </div>`;
     } else if (sources.yahoo || sources.finnhub || sources.alpha_vantage) {
-<<<<<<< HEAD
         const reason = (sources.yahoo && sources.yahoo.error) || (sources.finnhub && sources.finnhub.error) || (sources.alpha_vantage && sources.alpha_vantage.error) || 'unavailable';
         html += `<div class="card"><h3>Financials</h3><p class="muted">Not available (${esc(reason)}). Try the parent company or stock ticker.</p></div>`;
-=======
-        html += `<div class="card"><h3>Financials</h3><p class="muted">no data found</p></div>`;
->>>>>>> origin/backend
     }
     if (!options.leadId && news.length) {
         html += `<div class="card"><h3>Recent News (${news.length})</h3>`;
@@ -957,19 +951,11 @@ function renderCompanyDossier(dossier, titlePrefix, opts) {
         });
         html += `</table></div>`;
     } else if (sources.nse && sources.nse.error && sources.nse.error !== 'us_listing' && sources.nse.error !== 'not_india_listing') {
-<<<<<<< HEAD
         html += `<div class="card"><h3>Filings</h3><p class="muted">NSE announcements not available (${esc(sources.nse.error)}).</p></div>`;
     } else if (sources.sec_edgar) {
         const reason = (sources.sec_edgar && sources.sec_edgar.error) || 'unavailable';
         const india = reason === 'india_listing';
         html += `<div class="card"><h3>${india ? 'Filings' : 'SEC Filings'}</h3><p class="muted">${india ? 'No NSE announcements found for this listing.' : `Not available (${esc(reason)}). US filings need a resolved ticker/CIK.`}</p></div>`;
-=======
-        html += `<div class="card"><h3>Filings</h3><p class="muted">no data found</p></div>`;
-    } else if (sources.sec_edgar) {
-        const reason = (sources.sec_edgar && sources.sec_edgar.error) || 'unavailable';
-        const india = reason === 'india_listing';
-        html += `<div class="card"><h3>${india ? 'Filings' : 'SEC Filings'}</h3><p class="muted">no data found</p></div>`;
->>>>>>> origin/backend
     }
     return html;
 }

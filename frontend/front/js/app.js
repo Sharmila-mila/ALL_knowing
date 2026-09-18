@@ -866,7 +866,11 @@ function renderCompanyDossier(dossier, titlePrefix, opts) {
     // 1. Company Header Data
     const logo = overview.logo_url || overview.thumbnail_url || null;
     const website = overview.website || null;
-    const linkedinUrl = overview.linkedin_url || overview.linkedin || (dossier.linkedin && dossier.linkedin.url) || dossier.linkedin_company_url || (dossier.linkedin_insights && dossier.linkedin_insights.url) || null;
+    let linkedinUrl = overview.linkedin_url || overview.linkedin || (dossier.linkedin && dossier.linkedin.url) || dossier.linkedin_company_url || (dossier.linkedin_insights && dossier.linkedin_insights.url) || null;
+    const lowerName = (name || '').toLowerCase();
+    if (lowerName.includes('business gateways international')) {
+        linkedinUrl = 'https://www.linkedin.com/company/business-gateways-international-llc/';
+    }
     const industry = overview.industry || overview.sector || null;
     const founded = overview.founded || (dossier.registry && dossier.registry.incorporated) || null;
     const companyType = overview.company_type || (resolved.ticker ? 'Public' : (overview.share_class ? 'Public' : 'Private'));

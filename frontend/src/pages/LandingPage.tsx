@@ -6,6 +6,9 @@ import { WhoUsesZuntra } from '../components/landing/WhoUsesZuntra';
 import { HowItWorks } from '../components/landing/HowItWorks';
 import { WhyZuntra } from '../components/landing/WhyZuntra';
 import { CTA } from '../components/landing/CTA';
+import { Engineering } from '../components/landing/Engineering';
+import { About } from '../components/landing/About';
+import { Blog } from '../components/landing/Blog';
 import { Footer } from '../components/landing/Footer';
 
 interface LandingPageProps {
@@ -23,6 +26,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchDashboard }) =
           <WhoUsesZuntra />
           <HowItWorks />
           <WhyZuntra />
+          <Engineering />
+          <About />
+          <Blog />
           <CTA onLaunchDashboard={onLaunchDashboard} />
         </main>
       </div>

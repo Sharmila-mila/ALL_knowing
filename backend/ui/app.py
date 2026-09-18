@@ -551,6 +551,15 @@ def _fresh_company_dossier(query: str, max_age_s: float = 6 * 3600):
         or li_ins.get("linkedin_url")
         or ""
     ).strip().split("?")[0].rstrip("/")
+    
+    # Manual override for Business Gateways International
+    if "business gateways international" in str(query).lower() or "business gateways international" in str(overview.get("name", "")).lower():
+        company_linkedin = "https://www.linkedin.com/company/business-gateways-international-llc"
+        data["linkedin_url"] = company_linkedin
+        overview["linkedin_url"] = company_linkedin
+        li_ins["url"] = company_linkedin
+        data["linkedin_company_url"] = company_linkedin
+
     if not company_linkedin:
         return None
     if company_linkedin and not re.fullmatch(
@@ -616,7 +625,7 @@ def api_company_stream():
     def generate():
         while True:
             try:
-                msg = q.get(timeout=120)
+                msg = q.get(timeout=300)
             except queue.Empty:
                 yield f"data: {json.dumps({'pct': 100, 'step': 'Timeout', 'done': True, 'error': 'Pipeline timed out'})}\n\n"
                 break
